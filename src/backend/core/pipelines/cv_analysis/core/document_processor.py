@@ -1,22 +1,24 @@
 """
 Document processing pipeline for CV analysis.
 Handles PDF loading, semantic chunking, and embedding generation.
-Dependencies: langchain-community, langchain-experimental, langchain-huggingface
+Dependencies: langchain-community, langchain-experimental, langchain-huggingface, prefect
 """
 
 import logging
 import os
 from typing import List
+from prefect import task
 from langchain_community.document_loaders import PyPDFium2Loader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
+from src.backend.boundary.databases.vdb.engine import get_vector_client
 class DocumentProcessor:
     """
     Processes documents through loading, chunking, and embedding pipeline.
     """
 
-    def __init__(self, model_name: str = "google/embeddinggemma-300m"):
+    def __init__(self, model_name: str = "intfloat/e5-large-v2"):
         """
         Initialize document processor with embedding model and chunker.
 
@@ -43,6 +45,7 @@ class DocumentProcessor:
             self.logger.error(f"Failed to initialize document processor: {e}")
             raise
 
+    @task(retries=2,description='Loading document from file path',tags=['cv_analysis','loading'])
     def load_document(self, file_path: str) -> List[Document]:
         """
         Load document from file path using PyPDFLoader.
@@ -75,6 +78,7 @@ class DocumentProcessor:
             self.logger.error(f"Error loading document {file_path}: {e}")
             raise DocumentLoadError(f"Failed to load document: {e}")
 
+    @task(retries=2,description='Chunking documents into semantic pieces',tags=['cv_analysis','chunking'])
     def chunk_documents(self, docs: List[Document]) -> List[Document]:
         """
         Split documents into semantic chunks.
@@ -105,6 +109,30 @@ class DocumentProcessor:
             self.logger.error(f"Error chunking documents: {e}")
             raise DocumentChunkError(f"Failed to chunk documents: {e}")
 
+    @task( retries=2,description='Loading document chunks to vector store',tags=['cv_analysis','vector_store'])
+    def insert_to_vector_store(self, chunks: List[Document]) -> None:
+        """
+        Insert document chunks into vector store.
+
+        Args:
+            chunks: List of Document chunks to insert
+
+        Raises:
+            DocumentEmbedError: If vector insertion fails
+        """
+        try:
+            vector_client = get_vector_client("cv_documents")
+            docs_for_insertion = []
+            for chunk in chunks:
+                docs_for_insertion.append({
+                    "content": chunk.page_content,
+                    "metadata": chunk.metadata
+                })
+            vector_client.insert_documents(docs_for_insertion)
+            self.logger.info(f"Inserted {len(chunks)} chunks into vector store")
+        except Exception as e:
+            self.logger.error(f"Error inserting into vector store: {e}")
+            raise DocumentEmbedError(f"Failed to insert documents: {e}")
 
     def process_pipeline(self, file_path: str) -> List[Document]:
         """
@@ -122,6 +150,7 @@ class DocumentProcessor:
         try:
             docs = self.load_document(file_path)
             chunks_extracted = self.chunk_documents(docs)
+            self.insert_to_vector_store(chunks_extracted)
             return chunks_extracted
         except (DocumentLoadError, DocumentChunkError, DocumentEmbedError) as e:
             raise DocumentProcessError(f"Pipeline failed: {e}")

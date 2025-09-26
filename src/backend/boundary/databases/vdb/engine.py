@@ -1,9 +1,16 @@
+from contextlib import contextmanager
+from typing import Generator
 from langchain_postgres.vectorstores import PGVector
 from langchain_huggingface import HuggingFaceEmbeddings # or your preferred embeddings
 from langchain_core.documents import Document
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 class LangchainPgVectorClient:
-    def __init__(self, connection_url, collection_name, embedding_model_name="google/embeddinggemma-300m"):
+    def __init__(self, connection_url, collection_name, embedding_model_name="intfloat/e5-large-v2"):
         self.embeddings = HuggingFaceEmbeddings(model=embedding_model_name)
         self.collection_name = collection_name
         self.connection_url = connection_url
@@ -29,10 +36,13 @@ class LangchainPgVectorClient:
         """
         results = self.vector_store.similarity_search(query=query, k=k)
         return results
-if __name__ == "__main__":
-    client = LangchainPgVectorClient(connection_url="postgresql://postgres:postgres@localhost:6024/postgres", collection_name="test")
-    # docs = [
-    #     {"content": "This is a test document", "metadata": {"source": "test"}},
-    #     {"content": "This is another test document", "metadata": {"source": "test"}},
-    # ]
-    # client.insert_documents(docs)
+    def get_vs(self):
+        return self.vector_store
+
+
+def get_vector_client(collection_name: str,connection_url: str = os.getenv('POSTGRES_CONNECTION_STRING')) -> Generator[LangchainPgVectorClient, None, None]:
+    """Context manager for vector database client"""
+    client = LangchainPgVectorClient(connection_url, collection_name)
+    return client
+
+
