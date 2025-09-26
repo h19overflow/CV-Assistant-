@@ -84,39 +84,17 @@ class LangchainPgVectorClient:
     async def get_async_vs(self):
         """Get async vector store, creating it if needed"""
         if self._async_vector_store is None:
-            # Create async client and get vector store
-            async_client = AsyncPGVectorClient(
+            # Create async vector store directly
+            self._async_vector_store = PGVector(
                 embeddings=self.embeddings,
                 collection_name=self.collection_name,
-                connection_url=self.async_connection_url
-            )
-            self._async_vector_store = await async_client.get_vector_store()
-        return self._async_vector_store
-
-
-class AsyncPGVectorClient:
-    """Separate async-only PGVector client"""
-
-    def __init__(self, embeddings, collection_name, connection_url):
-        self.embeddings = embeddings
-        self.collection_name = collection_name
-        self.connection_url = connection_url
-        self._vector_store = None
-
-    async def get_vector_store(self):
-        if self._vector_store is None:
-            # Create the vector store assuming table already exists
-            # This bypasses the sync initialization issue
-            self._vector_store = PGVector(
-                embeddings=self.embeddings,
-                collection_name=self.collection_name,
-                connection=self.connection_url,
+                connection=self.async_connection_url,
                 use_jsonb=True,
                 pre_delete_collection=False,
-                create_extension=False  # Skip extension creation
+                create_extension=False
             )
+        return self._async_vector_store
 
-        return self._vector_store
 
 
 def get_vector_client(collection_name: str, connection_url: str = os.getenv('POSTGRES_CONNECTION_STRING')) -> LangchainPgVectorClient:
@@ -173,5 +151,4 @@ def prewarm_models(models=None, connection_url=None):
 
     _prewarmed = True
     print("🚀 Pre-warming complete! Subsequent queries will be much faster.")
-
 

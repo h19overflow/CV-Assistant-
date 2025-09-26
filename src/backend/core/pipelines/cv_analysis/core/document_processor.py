@@ -12,7 +12,7 @@ from langchain_community.document_loaders import PyPDFium2Loader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
-from src.backend.boundary.databases.vdb.engine import get_vector_client
+from src.backend.boundary.databases.vdb.vdb_engine import get_vector_client
 class DocumentProcessor:
     """
     Processes documents through loading, chunking, and embedding pipeline.

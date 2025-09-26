@@ -32,7 +32,7 @@ def document_processing_flow(file_path: str, model_name: str = "sentence-transfo
     return chunks
 
 def fetch_context(queries:list)->list[Document]:
-    from src.backend.boundary.databases.vdb.engine import get_vector_client
+    from src.backend.boundary.databases.vdb.vdb_engine import get_vector_client
     client = get_vector_client(collection_name='cv_documents')
     # Use the optimized batch query method
     doc_results = client.query_batch(queries, k=2)
@@ -44,7 +44,7 @@ async def fetch_context_async(queries:list)->list[Document]:
     return await asyncio.to_thread(fetch_context, queries)
 
 if __name__ == "__main__":
-    from src.backend.boundary.databases.vdb.engine import prewarm_models
+    from src.backend.boundary.databases.vdb.vdb_engine import prewarm_models
 
     # Pre-warm models at startup
     prewarm_models()

@@ -5,7 +5,7 @@ Run this once when your application starts to dramatically improve query perform
 
 def startup():
     """Initialize and pre-warm all models and connections"""
-    from src.backend.boundary.databases.vdb.engine import prewarm_models
+    from src.backend.boundary.databases.vdb.vdb_engine import prewarm_models
 
     print("🚀 Starting CV Analysis Pipeline...")
 
