@@ -1,23 +1,22 @@
 """
 Document processing pipeline for CV analysis.
-Handles document loading, semantic chunking, and embedding generation.
-Dependencies: langchain, huggingface-hub
+Handles PDF loading, semantic chunking, and embedding generation.
+Dependencies: langchain-community, langchain-experimental, langchain-huggingface
 """
 
 import logging
+import os
 from typing import List
-from langchain_community.document_loaders import UnstructuredFileIOLoader
+from langchain_community.document_loaders import PyPDFium2Loader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
-
-
 class DocumentProcessor:
     """
     Processes documents through loading, chunking, and embedding pipeline.
     """
 
-    def __init__(self, model_name: str = "Qwen/Qwen3-Embedding-0.6B"):
+    def __init__(self, model_name: str = "google/embeddinggemma-300m"):
         """
         Initialize document processor with embedding model and chunker.
 
@@ -33,7 +32,12 @@ class DocumentProcessor:
 
         try:
             self._embeddings = HuggingFaceEmbeddings(model_name=model_name)
-            self._chunker = SemanticChunker(embeddings=self._embeddings)
+            self._chunker = SemanticChunker(
+                embeddings=self._embeddings,
+                min_chunk_size=500,
+                breakpoint_threshold_amount=0.95,
+                breakpoint_threshold_type="percentile"
+            )
             self.logger.info(f"Document processor initialized with model: {model_name}")
         except Exception as e:
             self.logger.error(f"Failed to initialize document processor: {e}")
@@ -41,7 +45,7 @@ class DocumentProcessor:
 
     def load_document(self, file_path: str) -> List[Document]:
         """
-        Load document from file path using UnstructuredFileIOLoader.
+        Load document from file path using PyPDFLoader.
 
         Args:
             file_path: Path to document file
@@ -53,13 +57,17 @@ class DocumentProcessor:
             DocumentLoadError: If document cannot be loaded
         """
         try:
-            with open(file_path, "rb") as f:
-                loader = UnstructuredFileIOLoader(
-                    f, mode="elements", strategy="fast"
-                )
-                docs = loader.load()
-                self.logger.info(f"Loaded {len(docs)} document elements from {file_path}")
-                return docs
+            loader = PyPDFium2Loader(file_path=file_path)
+            docs = loader.load()
+
+            self.logger.info(f"Loaded {len(docs)} pages from {file_path}")
+
+            # Debug: Check what we're getting from the loader
+            for i, doc in enumerate(docs[:3]):  # Show first 3 docs
+                self.logger.info(f"Page {i+1}: length={len(doc.page_content)}, content='{doc.page_content[:100]}...'")
+
+            return docs
+
         except FileNotFoundError:
             self.logger.error(f"File not found: {file_path}")
             raise DocumentLoadError(f"File not found: {file_path}")
@@ -85,40 +93,20 @@ class DocumentProcessor:
             return []
 
         try:
-            chunks = self._chunker.split_documents(docs)
-            self.logger.info(f"Created {len(chunks)} chunks from {len(docs)} documents")
-            return chunks
+            chunks_generated = self._chunker.split_documents(docs)
+            self.logger.info(f"Created {len(chunks_generated)} chunks from {len(docs)} documents")
+
+            # Debug: Check chunk sizes
+            for i, chunk in enumerate(chunks_generated[:5]):  # Show first 5 chunks
+                self.logger.info(f"Chunk {i}: length={len(chunk.page_content)}, content='{chunk.page_content[:100]}...'")
+
+            return chunks_generated
         except Exception as e:
             self.logger.error(f"Error chunking documents: {e}")
             raise DocumentChunkError(f"Failed to chunk documents: {e}")
 
-    def embed_documents(self, docs: List[Document]) -> List[List[float]]:
-        """
-        Generate embeddings for document chunks.
 
-        Args:
-            docs: List of Document objects to embed
-
-        Returns:
-            List of embedding vectors
-
-        Raises:
-            DocumentEmbedError: If embedding fails
-        """
-        if not docs:
-            self.logger.warning("No documents provided for embedding")
-            return []
-
-        try:
-            texts = [doc.page_content for doc in docs]
-            embeddings = self._embeddings.embed_documents(texts)
-            self.logger.info(f"Generated embeddings for {len(docs)} documents")
-            return embeddings
-        except Exception as e:
-            self.logger.error(f"Error embedding documents: {e}")
-            raise DocumentEmbedError(f"Failed to embed documents: {e}")
-
-    def process_pipeline(self, file_path: str) -> List[List[float]]:
+    def process_pipeline(self, file_path: str) -> List[Document]:
         """
         Complete document processing pipeline.
 
@@ -126,16 +114,15 @@ class DocumentProcessor:
             file_path: Path to document file
 
         Returns:
-            List of embedding vectors
+            List of Document objects ready for vectorstore
 
         Raises:
             DocumentProcessError: If any pipeline step fails
         """
         try:
             docs = self.load_document(file_path)
-            chunks = self.chunk_documents(docs)
-            embeddings = self.embed_documents(chunks)
-            return embeddings
+            chunks_extracted = self.chunk_documents(docs)
+            return chunks_extracted
         except (DocumentLoadError, DocumentChunkError, DocumentEmbedError) as e:
             raise DocumentProcessError(f"Pipeline failed: {e}")
         except Exception as e:
@@ -161,5 +148,10 @@ class DocumentEmbedError(DocumentProcessError):
     pass
 if __name__ == "__main__":
     dp = DocumentProcessor()
-    embeddings = dp.process_pipeline(r"C:\Users\User\Projects\Resume_System\src\backend\core\pipelines\cv_analysis\core\DATABASE-SCHEMA.pdf")
-    print(embeddings)
+    chunks = dp.process_pipeline(r"C:\Users\User\Projects\Resume_System\src\backend\core\pipelines\cv_analysis\core\DATABASE-SCHEMA.pdf")
+
+    if not os.path.exists('results'):
+        os.mkdir('results')
+
+    with open(r'results\chunks.txt', 'w', encoding='utf-8') as f:
+       f.write(str(chunks))
