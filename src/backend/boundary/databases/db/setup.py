@@ -2,10 +2,9 @@
 Database setup and testing script.
 Creates all tables and tests basic operations.
 """
-
+from src.backend.boundary.databases.db import AuthCRUD
 from .engine import get_db_manager, get_session_context
 from .models import User, Resume, Section, Entity, Feedback
-import uuid
 
 
 def create_all_tables():
@@ -29,13 +28,9 @@ def test_database_operations():
     try:
         with get_session_context() as session:
             # Test 1: Create a user
-            test_user = User(
-                email="test@example.com",
-                password_hash="hashed_password_here"
-            )
-            session.add(test_user)
-            session.commit()
-            print(f"✅ Created user: {test_user}")
+            test_user = AuthCRUD.create_user(
+                email="hamzakhaledlklk@gmail.com",
+                password='testpassword')
 
             # Test 2: Create a resume
             test_resume = Resume(
@@ -82,7 +77,7 @@ def test_database_operations():
             print(f"✅ Created feedback: {test_feedback}")
 
             # Test 6: Query relationships
-            user_with_resumes = session.query(User).filter(User.email == "test@example.com").first()
+            user_with_resumes = session.query(User).filter(User.email == "hamzakhaledlklk@gmail.com").first()
             print(f"✅ User has {len(user_with_resumes.resumes)} resume(s)")
 
             resume_with_sections = user_with_resumes.resumes[0]
@@ -107,25 +102,9 @@ def test_database_operations():
 
 def setup_and_test():
     """Complete database setup and testing"""
-    print("🚀 Starting database setup...")
-
-    # Step 1: Create tables
-    if not create_all_tables():
-        return False
-
-    # Step 2: Test operations
-    if not test_database_operations():
-        return False
-
-    print("🎉 Database setup completed successfully!")
-    print("\n📋 Available tables:")
-    print("  - users")
-    print("  - resumes")
-    print("  - sections")
-    print("  - entities")
-    print("  - feedback")
-    print("\n🔗 Connected to the same PostgreSQL database as your vector store!")
-
+    with get_session_context() as session:
+        result = session.query(User).first()
+        print(AuthCRUD.verify_password(password='testpassword', hashed=result.password_hash))
     return True
 
 

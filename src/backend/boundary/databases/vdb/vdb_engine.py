@@ -78,8 +78,10 @@ class LangchainPgVectorClient:
             results = self.query(query, k)
             all_results.extend(results)
         return all_results
+
     def get_vs(self):
         return self._ensure_vector_store()
+
 
     async def get_async_vs(self):
         """Get async vector store, creating it if needed"""
