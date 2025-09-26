@@ -3433,6 +3433,23 @@ wheels = [
 ]
 
 [[package]]
+name = "perplexityai"
+version = "0.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/16/76/af0857d3e1b9724af5b073955121f100b6aa40db8b687a2f0e6ddb113f1c/perplexityai-0.12.0.tar.gz", hash = "sha256:9dfbf72e4a73ceffc783e7ddea4c96835e3cfda89b118e77b8aa65ca8bb77e31", size = 108470, upload-time = "2025-09-26T17:04:35.841Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a7/0e/5f1d4239fedcd51cd15caa63256eb0a72edfffef8b7e81cae69e87105d46/perplexityai-0.12.0-py3-none-any.whl", hash = "sha256:b06007b5807b4deb814ecc4b609a466f6ce0e7f7463a61bb186ee1c2b1e0f887", size = 96426, upload-time = "2025-09-26T17:04:34.615Z" },
+]
+
+[[package]]
 name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4459,6 +4476,7 @@ dependencies = [
     { name = "langchain-postgres" },
     { name = "langchain-unstructured" },
     { name = "passlib" },
+    { name = "perplexityai" },
     { name = "pip" },
     { name = "prefect" },
     { name = "psycopg-binary" },
@@ -4488,6 +4506,7 @@ requires-dist = [
     { name = "langchain-postgres", specifier = ">=0.0.15" },
     { name = "langchain-unstructured", specifier = ">=0.1.6" },
     { name = "passlib", specifier = ">=1.7.4" },
+    { name = "perplexityai", specifier = ">=0.12.0" },
     { name = "pip", specifier = ">=25.2" },
     { name = "prefect", specifier = ">=3.4.20" },
     { name = "psycopg-binary", specifier = ">=3.2.10" },

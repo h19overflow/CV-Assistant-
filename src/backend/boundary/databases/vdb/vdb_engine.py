@@ -1,12 +1,8 @@
-from contextlib import contextmanager
-from typing import Generator
 from langchain_postgres.vectorstores import PGVector
 from langchain_huggingface import HuggingFaceEmbeddings # or your preferred embeddings
 from langchain_core.documents import Document
 import os
 from dotenv import load_dotenv
-import asyncpg
-from sqlalchemy.ext.asyncio import create_async_engine
 load_dotenv()
 
 
