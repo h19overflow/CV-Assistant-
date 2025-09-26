@@ -20,6 +20,7 @@ dependencies = [
     "spacy>=3.8.7",
     "sqlalchemy>=2.0.43",
     "transformers>=4.56.2",
+    "unstructured>=0.18.15",
     "uvicorn>=0.37.0",
     "wandb>=0.22.0",
 ]
