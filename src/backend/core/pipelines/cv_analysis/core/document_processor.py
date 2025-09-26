@@ -18,7 +18,7 @@ class DocumentProcessor:
     Processes documents through loading, chunking, and embedding pipeline.
     """
 
-    def __init__(self, model_name: str = "intfloat/e5-large-v2"):
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
         Initialize document processor with embedding model and chunker.
 

@@ -7,10 +7,11 @@ from prefect import flow
 from typing import List
 from langchain_core.documents import Document
 from src.backend.core.pipelines.cv_analysis.core.document_processor import DocumentProcessor
+from datetime import datetime
 
 
 @flow(name="document-processing-flow")
-def document_processing_flow(file_path: str, model_name: str = "intfloat/e5-large-v2") -> List[Document]:
+def document_processing_flow(file_path: str, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> List[Document]:
     """
     Complete document processing flow using Prefect tasks.
 
@@ -30,11 +31,43 @@ def document_processing_flow(file_path: str, model_name: str = "intfloat/e5-larg
 
     return chunks
 
-if __name__ == "__main__":
-    # Example usage
+def fetch_context(queries:list)->list[Document]:
     from src.backend.boundary.databases.vdb.engine import get_vector_client
-    vs = get_vector_client(collection_name='cv_documents').get_vs()
-    results = vs.similarity_search("What are my skills", k=2)
-    for id,r in enumerate(results):
-        print(f"Result {id+1}: {r.page_content}\n")
+    client = get_vector_client(collection_name='cv_documents')
+    # Use the optimized batch query method
+    doc_results = client.query_batch(queries, k=2)
+    return doc_results
 
+async def fetch_context_async(queries:list)->list[Document]:
+    """Async wrapper around sync vector search operations"""
+    import asyncio
+    return await asyncio.to_thread(fetch_context, queries)
+
+if __name__ == "__main__":
+    from src.backend.boundary.databases.vdb.engine import prewarm_models
+
+    # Pre-warm models at startup
+    prewarm_models()
+
+    # Now test performance - should be much faster
+    queries = ["What is the best way to learn Python?"]
+    start_time = datetime.now()
+    results = fetch_context(queries)
+    end_time = datetime.now()
+
+    for id , r in enumerate(results):
+        print('results:',id)
+        print("Content:", r.page_content)
+    print("---"*50)
+    retrieval_time = end_time - start_time
+    print("Retrieval time:", retrieval_time)
+    queries2='What is the best way to learn Python?'
+    start_time = datetime.now()
+    results = fetch_context([queries2])
+    end_time = datetime.now()
+    for id , r in enumerate(results):
+        print('results:',id)
+        print("Content:", r.page_content)
+
+    retrieval_time = end_time - start_time
+    print("Retrieval time:", retrieval_time)
