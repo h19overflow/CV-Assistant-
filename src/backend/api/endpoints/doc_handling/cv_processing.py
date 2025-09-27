@@ -12,7 +12,6 @@ from src.backend.core.pipelines.cv_analysis.flow.document_processing_flow import
     fetch_context,
     fetch_context_async
 )
-from src.backend.boundary.databases.db.CRUD.resume_CRUD import create_resume
 
 router = APIRouter(prefix="/cv", tags=["CV Processing"])
 
@@ -70,22 +69,15 @@ async def upload_and_process_cv(
             content = await file.read()
             buffer.write(content)
 
-        # Create a resume record in a database
-        resume = create_resume(
-            user_id=user_id,
-            filename=file.filename,
-            original_text=None  # Will be extracted during processing
-        )
-
-        # Process document through the flow with automatic section extraction
-        chunks = document_processing_flow(file_path, model_name, resume_id=str(resume.id), user_id=user_id)
+        # Process document through the flow (creates resume record automatically)
+        result = document_processing_flow(file_path, user_id, model_name)
 
         return ProcessingResponse(
             success=True,
-            message=f"Successfully processed {file.filename} with auto-extracted sections",
-            chunks_processed=len(chunks),
+            message=f"Successfully processed {result['filename']} with auto-extracted sections",
+            chunks_processed=result['chunks_processed'],
             file_path=file_path,
-            resume_id=str(resume.id)
+            resume_id=result['resume_id']
         )
 
     except Exception as e:
