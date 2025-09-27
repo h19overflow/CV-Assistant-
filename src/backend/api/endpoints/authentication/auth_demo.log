@@ -1,0 +1,90 @@
+2025-09-27 10:59:35,142 - __main__ - INFO - 
+🎯 STARTING AUTHENTICATION API DEMO
+2025-09-27 10:59:35,142 - __main__ - INFO - Target: http://localhost:8000
+2025-09-27 10:59:35,143 - __main__ - INFO - Time: 2025-09-27T10:59:35.143577
+2025-09-27 10:59:35,143 - __main__ - INFO - ======================================================================
+2025-09-27 10:59:35,143 - __main__ - INFO - 
+🔧 TESTING USER REGISTRATION
+2025-09-27 10:59:35,143 - __main__ - INFO - ==================================================
+2025-09-27 10:59:35,143 - __main__ - INFO - 🚀 POST /auth/register
+2025-09-27 10:59:35,454 - __main__ - INFO - ✅ 201 - 311.1ms
+2025-09-27 10:59:35,454 - __main__ - INFO - Response: {
+  "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+  "email": "demo@example.com"
+}
+2025-09-27 10:59:35,454 - __main__ - INFO - ✅ User registered successfully: {'user_id': 'e5033da9-c211-4e41-b74f-da4eeb872e68', 'email': 'demo@example.com'}
+2025-09-27 10:59:35,454 - __main__ - INFO - 
+🔑 TESTING USER LOGIN
+2025-09-27 10:59:35,454 - __main__ - INFO - ==================================================
+2025-09-27 10:59:35,454 - __main__ - INFO - 🚀 POST /auth/login
+2025-09-27 10:59:35,487 - __main__ - INFO - ✅ 200 - 32.6ms
+2025-09-27 10:59:35,487 - __main__ - INFO - Response: {
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNTAzM2RhOS1jMjExLTRlNDEtYjc0Zi1kYTRlZWI4NzJlNjgiLCJleHAiOjE3NTg5NDM3NzUsImlhdCI6MTc1ODk0MTk3NX0.CmrCS0Hp-Q3_-A4bGVg2pXauWHG_2xc-Oz5ydyW9ODU",
+  "token_type": "bearer",
+  "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+  "email": "demo@example.com"
+}
+2025-09-27 10:59:35,487 - __main__ - INFO - ✅ Login successful! Token: eyJhbGciOiJIUzI1NiIs...
+2025-09-27 10:59:35,487 - __main__ - INFO - User ID: e5033da9-c211-4e41-b74f-da4eeb872e68
+2025-09-27 10:59:35,487 - __main__ - INFO - Email: demo@example.com
+2025-09-27 10:59:35,487 - __main__ - INFO - 
+👤 TESTING GET CURRENT USER
+2025-09-27 10:59:35,488 - __main__ - INFO - ==================================================
+2025-09-27 10:59:35,488 - __main__ - INFO - 🚀 GET /auth/me
+2025-09-27 10:59:35,492 - __main__ - INFO - ✅ 200 - 4.1ms
+2025-09-27 10:59:35,492 - __main__ - INFO - Response: {
+  "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+  "email": "demo@example.com"
+}
+2025-09-27 10:59:35,492 - __main__ - INFO - ✅ Current user retrieved: {'user_id': 'e5033da9-c211-4e41-b74f-da4eeb872e68', 'email': 'demo@example.com'}
+2025-09-27 10:59:35,492 - __main__ - INFO - 
+🔍 TESTING TOKEN VERIFICATION
+2025-09-27 10:59:35,492 - __main__ - INFO - ==================================================
+2025-09-27 10:59:35,492 - __main__ - INFO - 🚀 POST /auth/verify-token
+2025-09-27 10:59:35,493 - __main__ - INFO - ✅ 200 - 1.0ms
+2025-09-27 10:59:35,493 - __main__ - INFO - Response: {
+  "valid": true,
+  "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+  "message": "Token is valid"
+}
+2025-09-27 10:59:35,493 - __main__ - INFO - ✅ Token verified: {'valid': True, 'user_id': 'e5033da9-c211-4e41-b74f-da4eeb872e68', 'message': 'Token is valid'}
+2025-09-27 10:59:35,493 - __main__ - INFO - 
+🚫 TESTING INVALID TOKEN SCENARIOS
+2025-09-27 10:59:35,493 - __main__ - INFO - ==================================================
+2025-09-27 10:59:35,493 - __main__ - INFO - Testing with invalid token...
+2025-09-27 10:59:35,493 - __main__ - INFO - 🚀 GET /auth/me
+2025-09-27 10:59:35,494 - __main__ - INFO - ❌ 401 - 1.0ms
+2025-09-27 10:59:35,494 - __main__ - ERROR - Error: {'detail': 'Invalid or expired token'}
+2025-09-27 10:59:35,494 - __main__ - INFO - 🚀 POST /auth/verify-token
+2025-09-27 10:59:35,494 - __main__ - INFO - ❌ 401 - 0.0ms
+2025-09-27 10:59:35,494 - __main__ - ERROR - Error: {'detail': 'Invalid or expired token'}
+2025-09-27 10:59:35,494 - __main__ - INFO - Testing with no token...
+2025-09-27 10:59:35,494 - __main__ - INFO - 🚀 GET /auth/me
+2025-09-27 10:59:35,495 - __main__ - INFO - ❌ 401 - 1.0ms
+2025-09-27 10:59:35,495 - __main__ - ERROR - Error: {'detail': 'Not authenticated'}
+2025-09-27 10:59:35,495 - __main__ - INFO - 
+📊 OBSERVABILITY REPORT
+2025-09-27 10:59:35,495 - __main__ - INFO - ======================================================================
+2025-09-27 10:59:35,495 - __main__ - INFO - 📈 SUMMARY METRICS:
+2025-09-27 10:59:35,495 - __main__ - INFO -    Total Requests: 7
+2025-09-27 10:59:35,495 - __main__ - INFO -    Successful: 4 (57.1%)
+2025-09-27 10:59:35,495 - __main__ - INFO -    Failed: 3 (42.9%)
+2025-09-27 10:59:35,495 - __main__ - INFO -    Average Response Time: 50.1ms
+2025-09-27 10:59:35,495 - __main__ - INFO - 
+📋 DETAILED RESULTS:
+2025-09-27 10:59:35,495 - __main__ - INFO -     1. ✅ POST /auth/register       201  311.1ms
+2025-09-27 10:59:35,495 - __main__ - INFO -     2. ✅ POST /auth/login          200   32.6ms
+2025-09-27 10:59:35,495 - __main__ - INFO -     3. ✅ GET  /auth/me             200    4.1ms
+2025-09-27 10:59:35,496 - __main__ - INFO -     4. ✅ POST /auth/verify-token   200    1.0ms
+2025-09-27 10:59:35,496 - __main__ - INFO -     5. ❌ GET  /auth/me             401    1.0ms
+2025-09-27 10:59:35,496 - __main__ - INFO -     6. ❌ POST /auth/verify-token   401    0.0ms
+2025-09-27 10:59:35,496 - __main__ - INFO -     7. ❌ GET  /auth/me             401    1.0ms
+2025-09-27 10:59:35,496 - __main__ - INFO - 
+⚡ ENDPOINT PERFORMANCE:
+2025-09-27 10:59:35,496 - __main__ - INFO -    POST /auth/register            avg:  311.1ms min:  311.1ms max:  311.1ms
+2025-09-27 10:59:35,496 - __main__ - INFO -    POST /auth/login               avg:   32.6ms min:   32.6ms max:   32.6ms
+2025-09-27 10:59:35,496 - __main__ - INFO -    GET /auth/me                   avg:    2.0ms min:    1.0ms max:    4.1ms
+2025-09-27 10:59:35,496 - __main__ - INFO -    POST /auth/verify-token        avg:    0.5ms min:    0.0ms max:    1.0ms
+2025-09-27 10:59:35,496 - __main__ - INFO - 
+💾 Detailed report saved to: auth_demo_report.json
+2025-09-27 10:59:35,497 - __main__ - INFO - 📝 Logs saved to: auth_demo.log

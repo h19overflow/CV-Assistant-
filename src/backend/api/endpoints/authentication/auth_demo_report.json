@@ -1,0 +1,160 @@
+{
+  "summary": {
+    "total_requests": 7,
+    "successful_requests": 4,
+    "failed_requests": 3,
+    "avg_response_time_ms": 50.10124615260533,
+    "test_timestamp": "2025-09-27T10:59:35.496790"
+  },
+  "responses": [
+    {
+      "endpoint": "/auth/register",
+      "method": "POST",
+      "status_code": 201,
+      "response_time_ms": 311.0840320587158,
+      "success": true,
+      "data": {
+        "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+        "email": "demo@example.com"
+      },
+      "error": null,
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:34 GMT",
+        "Server": "uvicorn",
+        "Content-Length": "77",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "endpoint": "/auth/login",
+      "method": "POST",
+      "status_code": 200,
+      "response_time_ms": 32.55891799926758,
+      "success": true,
+      "data": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNTAzM2RhOS1jMjExLTRlNDEtYjc0Zi1kYTRlZWI4NzJlNjgiLCJleHAiOjE3NTg5NDM3NzUsImlhdCI6MTc1ODk0MTk3NX0.CmrCS0Hp-Q3_-A4bGVg2pXauWHG_2xc-Oz5ydyW9ODU",
+        "token_type": "bearer",
+        "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+        "email": "demo@example.com"
+      },
+      "error": null,
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:35 GMT",
+        "Server": "uvicorn",
+        "Content-Length": "305",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "endpoint": "/auth/me",
+      "method": "GET",
+      "status_code": 200,
+      "response_time_ms": 4.066705703735352,
+      "success": true,
+      "data": {
+        "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+        "email": "demo@example.com"
+      },
+      "error": null,
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:35 GMT",
+        "Server": "uvicorn",
+        "Content-Length": "77",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "endpoint": "/auth/verify-token",
+      "method": "POST",
+      "status_code": 200,
+      "response_time_ms": 0.9996891021728516,
+      "success": true,
+      "data": {
+        "valid": true,
+        "user_id": "e5033da9-c211-4e41-b74f-da4eeb872e68",
+        "message": "Token is valid"
+      },
+      "error": null,
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:35 GMT",
+        "Server": "uvicorn",
+        "Content-Length": "90",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "endpoint": "/auth/me",
+      "method": "GET",
+      "status_code": 401,
+      "response_time_ms": 0.9996891021728516,
+      "success": false,
+      "data": null,
+      "error": "{'detail': 'Invalid or expired token'}",
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:35 GMT",
+        "Server": "uvicorn",
+        "WWW-Authenticate": "Bearer",
+        "Content-Length": "37",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "endpoint": "/auth/verify-token",
+      "method": "POST",
+      "status_code": 401,
+      "response_time_ms": 0.0,
+      "success": false,
+      "data": null,
+      "error": "{'detail': 'Invalid or expired token'}",
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:35 GMT",
+        "Server": "uvicorn",
+        "WWW-Authenticate": "Bearer",
+        "Content-Length": "37",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "endpoint": "/auth/me",
+      "method": "GET",
+      "status_code": 401,
+      "response_time_ms": 0.9996891021728516,
+      "success": false,
+      "data": null,
+      "error": "{'detail': 'Not authenticated'}",
+      "headers": {
+        "Date": "Sat, 27 Sep 2025 02:59:35 GMT",
+        "Server": "uvicorn",
+        "WWW-Authenticate": "Bearer",
+        "Content-Length": "30",
+        "Content-Type": "application/json"
+      }
+    }
+  ],
+  "endpoint_performance": {
+    "POST /auth/register": {
+      "avg_ms": 311.0840320587158,
+      "min_ms": 311.0840320587158,
+      "max_ms": 311.0840320587158,
+      "count": 1
+    },
+    "POST /auth/login": {
+      "avg_ms": 32.55891799926758,
+      "min_ms": 32.55891799926758,
+      "max_ms": 32.55891799926758,
+      "count": 1
+    },
+    "GET /auth/me": {
+      "avg_ms": 2.0220279693603516,
+      "min_ms": 0.9996891021728516,
+      "max_ms": 4.066705703735352,
+      "count": 3
+    },
+    "POST /auth/verify-token": {
+      "avg_ms": 0.4998445510864258,
+      "min_ms": 0.0,
+      "max_ms": 0.9996891021728516,
+      "count": 2
+    }
+  }
+}

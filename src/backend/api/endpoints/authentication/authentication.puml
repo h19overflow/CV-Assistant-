@@ -1,0 +1,42 @@
+@startuml
+' Set the diagram type to sequence at the top—this avoids ambiguity
+
+actor Client
+participant "API Router" as API
+participant "AuthCRUD"
+participant "JWT System"
+participant "User DB"
+
+== Register User ==
+Client -> API: POST /auth/register
+API -> AuthCRUD: create_user(email, password)
+AuthCRUD -> "User DB": Insert user with hashed password
+"User DB" --> AuthCRUD: new_user / error
+AuthCRUD --> API: new_user / UserAlreadyExistsError
+API --> Client: UserResponse / 400 error
+
+== Login User ==
+Client -> API: POST /auth/login
+API -> AuthCRUD: login_with_jwt(email, password)
+AuthCRUD -> "User DB": Query user by email
+"User DB" --> AuthCRUD: user record / error
+AuthCRUD -> "JWT System": Generate JWT token
+"JWT System" --> AuthCRUD: JWT token
+AuthCRUD --> API: login_result / InvalidCredentialsError
+API --> Client: TokenResponse / 401 error
+
+== Get Current User ==
+Client -> API: GET /auth/me (with JWT token)
+API -> "JWT System": Validate JWT token
+"JWT System" --> API: user_id
+API -> "User DB": Query user by id
+"User DB" --> API: user
+API --> Client: UserResponse
+
+== Verify Token ==
+Client -> API: POST /auth/verify-token (with JWT token)
+API -> "JWT System": Validate JWT token
+"JWT System" --> API: user_id
+API --> Client: {"valid": True, "user_id": user_id}
+
+@enduml
