@@ -69,27 +69,10 @@ class Section(Base):
 
     # Relationships
     resume = relationship("Resume", back_populates="sections")
-    entities = relationship("Entity", back_populates="section", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Section(id={self.id}, type={self.section_type}, resume_id={self.resume_id})>"
 
-
-class Entity(Base):
-    """Extracted entities from resume sections"""
-    __tablename__ = 'entities'
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    section_id = Column(UUID(as_uuid=True), ForeignKey('sections.id'), nullable=False)
-    entity_type = Column(String(100), nullable=False)  # Skill, ProjectName, Company, Degree, Certification
-    value = Column(String(255), nullable=False)
-    normalized = Column(String(255))  # For standardized lookups/matching
-
-    # Relationships
-    section = relationship("Section", back_populates="entities")
-
-    def __repr__(self):
-        return f"<Entity(id={self.id}, type={self.entity_type}, value={self.value})>"
 
 
 class Feedback(Base):

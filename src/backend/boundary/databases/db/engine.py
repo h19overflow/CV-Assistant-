@@ -53,7 +53,21 @@ class DatabaseManager:
 
     def drop_tables(self):
         """Drop all database tables (use with caution!)"""
-        Base.metadata.drop_all(bind=self.engine)
+        try:
+            Base.metadata.drop_all(bind=self.engine)
+        except Exception as e:
+            # If normal drop fails due to foreign keys, use CASCADE
+            print(f"Normal drop failed: {e}")
+            print("Attempting to drop with CASCADE...")
+            from sqlalchemy import text
+            with self.engine.connect() as connection:
+                # Drop tables manually with CASCADE in dependency order
+                connection.execute(text("DROP TABLE IF EXISTS entities CASCADE"))
+                connection.execute(text("DROP TABLE IF EXISTS feedback CASCADE"))
+                connection.execute(text("DROP TABLE IF EXISTS sections CASCADE"))
+                connection.execute(text("DROP TABLE IF EXISTS resumes CASCADE"))
+                connection.execute(text("DROP TABLE IF EXISTS users CASCADE"))
+                connection.commit()
 
     @contextmanager
     def get_session(self) -> Generator[Session, None, None]:
@@ -127,5 +141,6 @@ def get_session_context() -> Generator[Session, None, None]:
 if __name__ == "__main__":
     # Example usage and test
     db_manager = get_db_manager()
+    db_manager.drop_tables()
     db_manager.create_tables()
-    print("Database tables created successfully.")
+    print("Database tables dropped and recreated successfully.")

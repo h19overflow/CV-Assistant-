@@ -4,7 +4,7 @@ Creates all tables and tests basic operations.
 """
 from src.backend.boundary.databases.db import AuthCRUD
 from .engine import get_db_manager, get_session_context
-from .models import User, Resume, Section, Entity, Feedback
+from .models import User, Resume, Section, Feedback
 
 
 def create_all_tables():
@@ -55,16 +55,6 @@ def test_database_operations():
             session.commit()
             print(f"✅ Created section: {test_section}")
 
-            # Test 4: Create an entity
-            test_entity = Entity(
-                section_id=test_section.id,
-                entity_type="Skill",
-                value="Python",
-                normalized="python"
-            )
-            session.add(test_entity)
-            session.commit()
-            print(f"✅ Created entity: {test_entity}")
 
             # Test 5: Create feedback
             test_feedback = Feedback(
