@@ -62,9 +62,7 @@ class DatabaseManager:
             from sqlalchemy import text
             with self.engine.connect() as connection:
                 # Drop tables manually with CASCADE in dependency order
-                connection.execute(text("DROP TABLE IF EXISTS entities CASCADE"))
                 connection.execute(text("DROP TABLE IF EXISTS feedback CASCADE"))
-                connection.execute(text("DROP TABLE IF EXISTS sections CASCADE"))
                 connection.execute(text("DROP TABLE IF EXISTS resumes CASCADE"))
                 connection.execute(text("DROP TABLE IF EXISTS users CASCADE"))
                 connection.commit()

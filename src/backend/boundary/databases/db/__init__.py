@@ -3,7 +3,7 @@ Database package for Resume System.
 Provides models, engine, and utilities for database operations.
 """
 
-from .models import User, Resume, Section,  Feedback, Base
+from .models import User, Resume, Feedback, Base
 from .engine import (
     DatabaseManager,
     get_db_manager,
@@ -25,7 +25,6 @@ __all__ = [
     # Models
     'User',
     'Resume',
-    'Section',
     'Feedback',
     'Base',
 
