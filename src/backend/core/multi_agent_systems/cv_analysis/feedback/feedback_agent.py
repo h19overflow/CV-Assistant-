@@ -25,7 +25,7 @@ class FeedbackDeps(BaseModel):
     market_data: str = ""
 
 feedback_agent = Agent(
-    model='gemini-2.0-flash-exp',
+    model='gemini-2.0-flash',
     output_type=ResumeFeedback,
     deps_type=FeedbackDeps,
 )
@@ -156,11 +156,11 @@ CERTIFICATES:
                 return "No skills identified for market research"
 
             # Search for current market trends
-            query = f"Current job market demand and trends for skills: {', '.join(skills[:5])}"  # Limit to top 5 skills
+            query = f"Current job market demand and trends for skills: {', '.join(skills[:10])}"  # Limit to top 5 skills
 
             search_response = self._perplexity_tool.search(query)
 
-            market_info = f"MARKET RESEARCH for skills: {', '.join(skills[:5])}\n\n"
+            market_info = f"MARKET RESEARCH for skills: {', '.join(skills[:10])}\n\n"
             for result in search_response.results[:3]:  # Top 3 results
                 market_info += f"• {result.title}\n"
                 if result.snippet:
