@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.backend.api.endpoints.doc_handling.cv_processing import router as cv_router
 from src.backend.api.endpoints.authentication.auth_endpoints import router as auth_router
+from src.backend.api.endpoints.ai_generation.feedback_endpoints import router as feedback_router
 from src.backend.api.deps import lifespan_manager
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(cv_router)
+app.include_router(feedback_router)
 
 @app.get("/")
 async def root():
@@ -42,7 +44,9 @@ async def root():
             "/cv/upload": "Upload and process CV",
             "/cv/process": "Process existing CV file",
             "/cv/query": "Query CV content",
-            "/cv/health": "Health check"
+            "/cv/health": "Health check",
+            "/ai/feedback/analyze": "Get AI feedback for latest resume",
+            "/ai/feedback/analyze/{resume_id}": "Get AI feedback for specific resume"
         }
     }
 
