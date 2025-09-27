@@ -3,10 +3,7 @@ Resume CRUD operations for CV management.
 """
 
 from typing import List, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
-from src.backend.boundary.databases.db import AuthCRUD
 from src.backend.boundary.databases.db.models import Resume
 from src.backend.boundary.databases.db.engine import get_session_context
 

@@ -10,16 +10,8 @@ from .engine import (
     get_session,
     get_session_context
 )
-from src.backend.boundary.databases.db.CRUD.auth_CRUD import (
-    AuthCRUD,
-    create_user,
-    login_user,
-    get_user,
-    AuthError,
-    UserAlreadyExistsError,
-    UserNotFoundError,
-    InvalidCredentialsError
-)
+# Import CRUD modules separately to avoid circular imports
+# Use direct imports in your code instead of importing from __init__
 
 __all__ = [
     # Models
@@ -32,15 +24,5 @@ __all__ = [
     'DatabaseManager',
     'get_db_manager',
     'get_session',
-    'get_session_context',
-
-    # Authentication
-    'AuthCRUD',
-    'create_user',
-    'login_user',
-    'get_user',
-    'AuthError',
-    'UserAlreadyExistsError',
-    'UserNotFoundError',
-    'InvalidCredentialsError'
+    'get_session_context'
 ]
