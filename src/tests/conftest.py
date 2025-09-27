@@ -10,37 +10,69 @@ from typing import Generator, Dict, Any
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from unittest.mock import patch
 
 from src.backend.api.main import app
-from src.backend.boundary.databases.db.models import Base, User, Resume
-from src.backend.boundary.databases.db.engine import get_session_context
+from src.tests.models_test import Base, User, Resume  # Use test-compatible models
+from src.backend.boundary.databases.db.engine import DatabaseManager, get_session_context
 from src.backend.boundary.databases.db.CRUD.auth_CRUD import AuthCRUD, create_user, login_with_jwt
-
+import contextlib
 # Test database setup
 TEST_DATABASE_URL = "sqlite:///./test_resume_system.db"
 
-@pytest.fixture(scope="session")
-def test_engine():
-    """Create test database engine."""
-    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    # Cleanup after all tests
-    os.remove("./test_resume_system.db") if os.path.exists("./test_resume_system.db") else None
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_database():
+    """Set up test database for all tests."""
+    # Create test engine
+    test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 
-@pytest.fixture(scope="function")
-def test_db_session(test_engine):
-    """Create fresh database session for each test."""
+    # Create all tables
+    Base.metadata.create_all(bind=test_engine)
+
+    # Mock the database manager to use test database
+    test_db_manager = DatabaseManager()
+    test_db_manager.engine = test_engine
+
+    # Patch get_session_context to use test database
+    @contextlib.contextmanager
+    def mock_get_session_context():
+        TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+        session = TestSessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    with patch('src.backend.boundary.databases.db.engine.get_session_context', mock_get_session_context), \
+         patch('src.backend.boundary.databases.db.CRUD.auth_CRUD.get_session_context', mock_get_session_context), \
+         patch('src.backend.boundary.databases.db.CRUD.resume_CRUD.get_session_context', mock_get_session_context), \
+         patch('src.backend.api.deps.get_database_manager', return_value=test_db_manager), \
+         patch('src.backend.boundary.databases.db.CRUD.auth_CRUD.User', User), \
+         patch('src.backend.boundary.databases.db.CRUD.resume_CRUD.Resume', Resume):
+        yield test_engine
+
+    # Cleanup after all tests
+    try:
+        if os.path.exists("./test_resume_system.db"):
+            os.remove("./test_resume_system.db")
+    except PermissionError:
+        # Database still in use, cleanup will happen on next run
+        pass
+
+@pytest.fixture(scope="function", autouse=True)
+def clean_database():
+    """Clean database before each test."""
+    test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
     TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     session = TestSessionLocal()
 
-    # Clear all tables before each test
-    session.query(Resume).delete()
-    session.query(User).delete()
-    session.commit()
-
-    yield session
-    session.close()
+    try:
+        # Clear all tables before each test
+        session.query(Resume).delete()
+        session.query(User).delete()
+        session.commit()
+    finally:
+        session.close()
 
 @pytest.fixture(scope="function")
 def test_client():

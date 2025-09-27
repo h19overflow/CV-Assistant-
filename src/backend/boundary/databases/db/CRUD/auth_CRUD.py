@@ -10,7 +10,7 @@ Overview:
 """
 
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -89,13 +89,14 @@ class AuthCRUD:
             raise RuntimeError("JWT library not available. Install python-jose[cryptography]")
 
         # Calculate when the token expires
-        expire_time = datetime.utcnow() + timedelta(minutes=JWT_EXPIRY_MINUTES)
+        now = datetime.now(timezone.utc)
+        expire_time = now + timedelta(minutes=JWT_EXPIRY_MINUTES)
 
         # Create the payload - 'sub' (subject) is standard for user ID
         payload = {
             "sub": str(user_id),  # Subject - the user this token belongs to
             "exp": expire_time,   # Expiration time
-            "iat": datetime.utcnow()  # Issued at time
+            "iat": now  # Issued at time
         }
 
         # Sign and encode the token
