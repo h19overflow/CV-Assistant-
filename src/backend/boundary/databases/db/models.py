@@ -46,6 +46,13 @@ class Resume(Base):
     summary = Column(Text)
     filename = Column(String(255))
 
+    # Pre-extracted sections for fast agent access
+    skills = Column(Text)
+    experience = Column(Text)
+    projects = Column(Text)
+    education = Column(Text)
+    certificates = Column(Text)
+
     # Relationships
     user = relationship("User", back_populates="resumes")
     feedback = relationship("Feedback", back_populates="resume", cascade="all, delete-orphan")

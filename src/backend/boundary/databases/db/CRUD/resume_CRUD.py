@@ -10,14 +10,21 @@ from src.backend.boundary.databases.db.models import Resume
 from src.backend.boundary.databases.db.engine import get_session_context
 
 
-def create_resume(user_id: str, filename: str, original_text: str = None, summary: str = None) -> Resume:
+def create_resume(user_id: str, filename: str, original_text: str = None, summary: str = None,
+                 skills: str = None, experience: str = None, projects: str = None,
+                 education: str = None, certificates: str = None) -> Resume:
     """Create a new resume record."""
     with get_session_context() as session:
         resume = Resume(
             user_id=user_id,
             filename=filename,
             original_text=original_text,
-            summary=summary
+            summary=summary,
+            skills=skills,
+            experience=experience,
+            projects=projects,
+            education=education,
+            certificates=certificates
         )
         session.add(resume)
         session.commit()
@@ -37,7 +44,9 @@ def get_user_resumes(user_id: str) -> List[Resume]:
         return session.query(Resume).filter(Resume.user_id == user_id).all()
 
 
-def update_resume(resume_id: str, filename: str = None, original_text: str = None, summary: str = None) -> Optional[Resume]:
+def update_resume(resume_id: str, filename: str = None, original_text: str = None, summary: str = None,
+                 skills: str = None, experience: str = None, projects: str = None,
+                 education: str = None, certificates: str = None) -> Optional[Resume]:
     """Update resume fields."""
     with get_session_context() as session:
         resume = session.query(Resume).filter(Resume.id == resume_id).first()
@@ -50,6 +59,16 @@ def update_resume(resume_id: str, filename: str = None, original_text: str = Non
             resume.original_text = original_text
         if summary is not None:
             resume.summary = summary
+        if skills is not None:
+            resume.skills = skills
+        if experience is not None:
+            resume.experience = experience
+        if projects is not None:
+            resume.projects = projects
+        if education is not None:
+            resume.education = education
+        if certificates is not None:
+            resume.certificates = certificates
 
         session.commit()
         session.refresh(resume)

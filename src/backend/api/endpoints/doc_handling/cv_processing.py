@@ -12,6 +12,7 @@ from src.backend.core.pipelines.cv_analysis.flow.document_processing_flow import
     fetch_context,
     fetch_context_async
 )
+from src.backend.boundary.databases.db.CRUD.resume_CRUD import create_resume
 
 router = APIRouter(prefix="/cv", tags=["CV Processing"])
 
@@ -21,6 +22,7 @@ class ProcessingResponse(BaseModel):
     message: str = Field(description="Status message")
     chunks_processed: int = Field(description="Number of chunks created")
     file_path: Optional[str] = Field(default=None, description="Path to processed file")
+    resume_id: Optional[str] = Field(default=None, description="ID of created resume record")
 
 class QueryRequest(BaseModel):
     """Request model for context queries."""
@@ -36,6 +38,7 @@ class QueryResponse(BaseModel):
 @router.post("/process", response_model=ProcessingResponse)
 async def upload_and_process_cv(
     file: UploadFile = File(..., description="CV file to process"),
+    user_id: str = Form(..., description="User ID who owns this CV"),
     model_name: str = Form(default="sentence-transformers/all-MiniLM-L6-v2", description="Embedding model to use")
 ):
     """
@@ -44,9 +47,10 @@ async def upload_and_process_cv(
     Args:
         file: PDF or text file containing the CV
         model_name: HuggingFace model name for embeddings
-
+        user_id: ID of the user uploading the CV
     Returns:
         ProcessingResponse: Processing status and results
+
     """
     try:
         # Validate file type
@@ -56,7 +60,7 @@ async def upload_and_process_cv(
                 detail="Only PDF, TXT, and DOCX files are supported"
             )
 
-        # Create temp directory if it doesn't exist
+        # Create a temp directory if it doesn't exist
         temp_dir = "temp_uploads"
         os.makedirs(temp_dir, exist_ok=True)
 
@@ -66,14 +70,22 @@ async def upload_and_process_cv(
             content = await file.read()
             buffer.write(content)
 
-        # Process document through the flow
-        chunks = document_processing_flow(file_path, model_name)
+        # Create a resume record in a database
+        resume = create_resume(
+            user_id=user_id,
+            filename=file.filename,
+            original_text=None  # Will be extracted during processing
+        )
+
+        # Process document through the flow with automatic section extraction
+        chunks = document_processing_flow(file_path, model_name, resume_id=str(resume.id), user_id=user_id)
 
         return ProcessingResponse(
             success=True,
-            message=f"Successfully processed {file.filename}",
+            message=f"Successfully processed {file.filename} with auto-extracted sections",
             chunks_processed=len(chunks),
-            file_path=file_path
+            file_path=file_path,
+            resume_id=str(resume.id)
         )
 
     except Exception as e:
