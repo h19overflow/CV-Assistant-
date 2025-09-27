@@ -342,3 +342,52 @@ def verify_jwt_token(token: str) -> str:
 def get_user(user_id: str) -> Optional[User]:
     """Get user by ID - convenience function"""
     return AuthCRUD.get_user_by_id(user_id)
+
+
+if __name__ == '__main__':
+    print("=== JWT Authentication Test ===")
+
+    # Test JWT availability
+    if JWT_AVAILABLE:
+        print("✓ JWT library available")
+    else:
+        print("✗ JWT library NOT available - install with: pip install python-jose[cryptography]")
+        exit(1)
+
+    # Test user login and token generation
+    test_email = "hamzakhaledlklk@gmail.com"
+    test_password = "test123"  # Replace with actual password
+
+    try:
+        print(f"\n1. Testing login for: {test_email}")
+
+        # Try to authenticate and get JWT token
+        login_result = login_with_jwt(test_email, test_password)
+        print("✓ Login successful!")
+        print(f"   User ID: {login_result['user_id']}")
+        print(f"   Email: {login_result['email']}")
+        print(f"   Token Type: {login_result['token_type']}")
+        print(f"   Access Token: {login_result['access_token'][:50]}...")  # Show first 50 chars
+
+        # Test token verification
+        print("\n2. Testing token verification...")
+        extracted_user_id = verify_jwt_token(login_result['access_token'])
+        print(f"✓ Token verified! Extracted User ID: {extracted_user_id}")
+
+        # Verify the user IDs match
+        if extracted_user_id == login_result['user_id']:
+            print("✓ User IDs match - JWT system working correctly!")
+        else:
+            print("✗ User ID mismatch - something is wrong")
+
+    except InvalidCredentialsError as e:
+        print(f"✗ Login failed: {e}")
+        print("   Make sure the email and password are correct")
+
+    except InvalidTokenError as e:
+        print(f"✗ Token verification failed: {e}")
+
+    except Exception as e:
+        print(f"✗ Unexpected error: {e}")
+
+    print("\n=== Test Complete ===")

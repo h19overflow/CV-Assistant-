@@ -5,6 +5,7 @@ Resume System API - Main FastAPI application
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.backend.api.endpoints.doc_handling.cv_processing import router as cv_router
+from src.backend.api.endpoints.authentication.auth_endpoints import router as auth_router
 
 app = FastAPI(
     title="Resume System API",
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth_router)
 app.include_router(cv_router)
 
 @app.get("/")
@@ -31,6 +33,10 @@ async def root():
         "message": "Resume System API",
         "version": "1.0.0",
         "endpoints": {
+            "/auth/register": "Register new user",
+            "/auth/login": "Login with email/password",
+            "/auth/me": "Get current user info",
+            "/auth/verify-token": "Verify JWT token",
             "/cv/upload": "Upload and process CV",
             "/cv/process": "Process existing CV file",
             "/cv/query": "Query CV content",
