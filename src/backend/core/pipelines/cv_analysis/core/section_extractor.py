@@ -22,22 +22,32 @@ class SectionExtractor:
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
 
-        # Predefined queries for each section
+        # Predefined queries for each section with very specific keywords
         self.section_queries = {
             "skills": [
-                "List programming languages and technologies",
+                "Python Django Flask FastAPI React Node.js JavaScript TypeScript",
+                "AWS Azure Docker Kubernetes PostgreSQL MongoDB Redis",
+                "Machine Learning TensorFlow PyTorch scikit-learn pandas numpy"
             ],
             "experience": [
-                "What work experience is listed?",
+                "Software Engineer Data Scientist ML Engineer internship job role",
+                "company startup corporation employer workplace years months",
+                "responsibilities achievements promoted developed implemented"
             ],
             "projects": [
-                "What projects are described?",
+                "GitHub repository portfolio project built developed created",
+                "hackathon competition side project personal open source",
+                "web application mobile app machine learning model system"
             ],
             "education": [
-                "List degrees, universities, and academic qualifications",
+                "Bachelor Master PhD degree university college school",
+                "Computer Science Data Science Engineering Mathematics Physics",
+                "GPA CGPA graduation expected graduate coursework semester"
             ],
             "certificates": [
-                "What certifications are listed?",
+                "AWS Certified Google Cloud Azure certification course",
+                "Coursera edX Udacity certificate completion training",
+                "professional certification license credential qualification"
             ]
         }
 
@@ -62,14 +72,22 @@ class SectionExtractor:
                 # Run queries for this section
                 results = fetch_context(queries)
 
-                # Filter results by filename if they have metadata
+                # Filter results by filename and deduplicate
                 filtered_results = []
+                seen_content = set()
+
                 for doc in results:
+                    # Filter by filename
                     if hasattr(doc, 'metadata') and 'source' in doc.metadata:
-                        if filename in doc.metadata['source']:
-                            filtered_results.append(doc)
-                    else:
-                        # Include if no metadata filtering possible
+                        if filename not in doc.metadata['source']:
+                            continue
+
+                    # Deduplicate content
+                    content = doc.page_content.strip()
+                    content_hash = hash(content[:200])  # Use first 200 chars for dedup
+
+                    if content_hash not in seen_content and len(content) > 50:
+                        seen_content.add(content_hash)
                         filtered_results.append(doc)
 
                 # Combine content from all results
@@ -105,7 +123,7 @@ class SectionExtractor:
 
     def _combine_results(self, results: List[Document], section_name: str) -> str:
         """
-        Combine query results into a single section content.
+        Combine query results into a single section content with section-specific filtering.
 
         Args:
             results: List of Document results
@@ -117,22 +135,50 @@ class SectionExtractor:
         if not results:
             return f"No {section_name} information found."
 
-        # Extract content from documents
-        content_pieces = []
+        # Section-specific keywords for content filtering
+        section_keywords = {
+            "skills": ["python", "javascript", "react", "aws", "docker", "tensorflow", "sql", "programming", "technology"],
+            "experience": ["engineer", "developer", "intern", "company", "role", "position", "responsibility", "years", "months"],
+            "projects": ["project", "built", "developed", "github", "repository", "application", "system", "hackathon"],
+            "education": ["university", "degree", "bachelor", "master", "phd", "gpa", "cgpa", "graduation", "coursework"],
+            "certificates": ["certified", "certification", "course", "training", "credential", "license", "completion"]
+        }
+
+        # Extract and filter content from documents
+        relevant_content = []
         for doc in results:
             content = doc.page_content.strip()
-            if content and content not in content_pieces:
-                content_pieces.append(content)
+
+            # Check if content is relevant to this section
+            if section_name in section_keywords:
+                keywords = section_keywords[section_name]
+                content_lower = content.lower()
+
+                # Count keyword matches
+                keyword_matches = sum(1 for keyword in keywords if keyword in content_lower)
+
+                # Include if it has enough keyword matches and is not too short
+                if keyword_matches >= 2 and len(content) > 30:
+                    relevant_content.append(content)
+
+        # Remove duplicates while preserving order
+        unique_content = []
+        for content in relevant_content:
+            if content not in unique_content:
+                unique_content.append(content)
 
         # Combine unique content pieces
-        combined_content = "\n\n".join(content_pieces)
+        if unique_content:
+            combined_content = "\n\n".join(unique_content)
 
-        # Limit length to avoid extremely long sections
-        max_length = 2000
-        if len(combined_content) > max_length:
-            combined_content = combined_content[:max_length] + "... [content truncated]"
+            # Limit length to avoid extremely long sections
+            max_length = 1500
+            if len(combined_content) > max_length:
+                combined_content = combined_content[:max_length] + "... [content truncated]"
 
-        return combined_content if combined_content else f"No specific {section_name} information found."
+            return combined_content
+        else:
+            return f"No specific {section_name} information found."
 
     def extract_single_section(self, section_name: str, filename: str) -> str:
         """
