@@ -6,11 +6,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.backend.api.endpoints.doc_handling.cv_processing import router as cv_router
 from src.backend.api.endpoints.authentication.auth_endpoints import router as auth_router
+from src.backend.api.deps import lifespan_manager
 
 app = FastAPI(
     title="Resume System API",
     description="API for CV analysis and processing",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan_manager  # Database lifecycle management
 )
 
 # CORS middleware

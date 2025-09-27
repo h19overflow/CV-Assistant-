@@ -4,7 +4,7 @@ Handles secure user authentication with password hashing and JWT tokens.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from typing import Dict, Any
 
@@ -13,15 +13,12 @@ from src.backend.boundary.databases.db.CRUD.auth_CRUD import (
     UserAlreadyExistsError,
     InvalidCredentialsError,
     InvalidTokenError,
-    login_with_jwt,
-    verify_jwt_token,
-    get_user
+    login_with_jwt
 )
+from src.backend.api.deps import get_current_user_id, get_current_user
+from src.backend.boundary.databases.db.models import User
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-# OAuth2 scheme for FastAPI to recognize Bearer tokens
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # Request/Response models
 class UserRegister(BaseModel):
@@ -121,98 +118,41 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         )
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(token: str = Depends(oauth2_scheme)) -> UserResponse:
+async def get_current_user_info(current_user: User = Depends(get_current_user)) -> UserResponse:
     """
     Get current user information from JWT token.
 
     Args:
-        token: JWT access token from Authorization header
+        current_user: User object from dependency injection
 
     Returns:
         Current user information
-
-    Raises:
-        401: If token is invalid or expired
-        404: If user not found
     """
-    try:
-        # Verify token and extract user ID
-        user_id = verify_jwt_token(token)
-
-        # Get user from database
-        user = get_user(user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-
-        return UserResponse(
-            user_id=str(user.id),
-            email=user.email
-        )
-
-    except InvalidTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get user info: {str(e)}"
-        )
+    return UserResponse(
+        user_id=str(current_user.id),
+        email=current_user.email
+    )
 
 @router.post("/verify-token")
-async def verify_token_endpoint(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
+async def verify_token_endpoint(user_id: str = Depends(get_current_user_id)) -> Dict[str, Any]:
     """
     Verify if a JWT token is valid.
 
     Args:
-        token: JWT access token from Authorization header
+        user_id: User ID extracted from valid token
 
     Returns:
         Token validation status and user ID
-
-    Raises:
-        401: If token is invalid or expired
     """
-    try:
-        user_id = verify_jwt_token(token)
+    return {
+        "valid": True,
+        "user_id": user_id,
+        "message": "Token is valid"
+    }
 
-        return {
-            "valid": True,
-            "user_id": user_id,
-            "message": "Token is valid"
-        }
-
-    except InvalidTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
-# HELPER FUNCTION
-async def get_current_user_from_token(token: str = Depends(oauth2_scheme)) -> str:
-    """
-    Extract and verify user ID from JWT token (use this in other endpoints).
-
-    Args:
-        token: JWT access token from Authorization header
-
-    Returns:
-        User ID string
-
-    Raises:
-        401: If token is invalid or expired
-    """
-    try:
-        return verify_jwt_token(token)
-    except InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
+# HELPER FUNCTIONS
+# Note: For other endpoints, use the dependencies from src.backend.api.deps:
+# - get_current_user_id: Get user ID from token
+# - get_current_user: Get full User object from token
+# - get_optional_user_id: Optional authentication (returns None if not authenticated)
+# - get_optional_user: Optional User object (returns None if not authenticated)
