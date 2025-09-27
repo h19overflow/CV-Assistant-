@@ -78,3 +78,39 @@ class Feedback(Base):
 
     def __repr__(self):
         return f"<Feedback(id={self.id}, category={self.category}, resume_id={self.resume_id})>"
+
+
+class CareerRoadmap(Base):
+    """Career roadmaps generated for users"""
+    __tablename__ = 'career_roadmaps'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    resume_id = Column(UUID(as_uuid=True), ForeignKey('resumes.id'), nullable=True)
+    goal = Column(String(500), nullable=False)
+    steps_data = Column(Text, nullable=False)  # JSON string of steps
+    edges_data = Column(Text, nullable=False)  # JSON string of edges
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User")
+    resume = relationship("Resume")
+
+    def __repr__(self):
+        return f"<CareerRoadmap(id={self.id}, user_id={self.user_id}, goal={self.goal})>"
+
+
+class ChatSession(Base):
+    """Chat sessions linked to users"""
+    __tablename__ = 'chat_sessions'
+
+    session_id = Column(String(36), primary_key=True)  # UUID as string
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_activity = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<ChatSession(session_id={self.session_id}, user_id={self.user_id})>"

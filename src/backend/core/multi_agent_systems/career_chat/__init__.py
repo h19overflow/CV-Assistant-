@@ -5,9 +5,9 @@ This module provides AI-powered career counseling through chat interactions,
 integrating with user resume data and generated roadmaps for personalized advice.
 """
 
-from .career_chat_agent import CareerChatAgent
-from .chat_session_manager import ChatSessionManager
-from .career_chat_schema import (
+from src.backend.core.multi_agent_systems.career_chat.agent.career_chat_agent import CareerChatAgent
+from src.backend.core.multi_agent_systems.career_chat.chat_context.chat_session_manager import ChatSessionManager
+from src.backend.core.multi_agent_systems.career_chat.agent.career_chat_schema import (
     ChatRequest,
     ChatResponse,
     StartSessionRequest,

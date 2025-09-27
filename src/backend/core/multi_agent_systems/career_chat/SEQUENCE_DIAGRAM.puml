@@ -1,0 +1,137 @@
+@startuml
+autonumber
+skinparam sequenceMessageAlign right
+title Career Chat System - Complete Flow
+
+actor User as U
+participant "FastAPI Endpoints" as API
+participant Authentication as AUTH
+participant ChatSessionManager as CSM
+participant ChatContextManager as CCM
+participant LangChainWrapper as LCW
+participant CareerChatAgent as CCA
+database PostgreSQL as DB
+participant "LangChain Chat History" as LCDB
+participant ChatSessionCRUD as CRUD
+
+' 1. User Authentication & Login
+group Login
+  U ->> API: POST /auth/login (email, password)
+  API ->> AUTH: Validate credentials
+  AUTH ->> DB: Query users table
+  DB -->> AUTH: User record
+  AUTH -->> API: JWT Token + user_id
+  API -->> U: Authentication successful + token
+end
+
+' 2. Start Chat Session
+group Start Chat Session
+  U ->> API: POST /career-chat/start-session (JWT, user_id, resume_id?, roadmap_id?)
+  API ->> AUTH: Verify JWT & extract user_id
+  AUTH -->> API: Validated user_id
+  API ->> CSM: start_session(user_id, resume_id, roadmap_id)
+
+  CSM ->> CCM: load_user_context(user_id, resume_id, roadmap_id)
+  CCM ->> DB: get_user_resume_sections(user_id)
+  DB -->> CCM: Resume sections data
+  CCM ->> DB: RoadmapCRUD.get_user_roadmaps(user_id)
+  DB -->> CCM: User's roadmaps
+  CCM -->> CSM: Complete user context
+
+  CSM ->> LCW: start_session(user_context)
+  LCW ->> LCDB: Create new chat session with context
+  LCDB -->> LCW: session_id (UUID)
+  LCW -->> CSM: session_id
+
+  CSM ->> CRUD: create_session(session_id, user_id)
+  CRUD ->> DB: INSERT INTO chat_sessions
+  DB -->> CRUD: Session ownership recorded
+  CRUD -->> CSM: Session created
+
+  CSM ->> CSM: create_initial_greeting(user_context)
+  CSM -->> API: {session_id, initial_message, context_summary}
+  API -->> U: Session started + greeting message
+end
+
+' 3. Send Chat Messages (Multiple)
+group Chat Messaging
+  U ->> API: POST /career-chat/send-message (JWT, session_id, message)
+  API ->> AUTH: Verify JWT & extract user_id
+  AUTH -->> API: Validated user_id
+  API ->> CSM: send_message(session_id, message, user_id)
+
+  CSM ->> CRUD: verify_user_session(session_id, user_id)
+  CRUD ->> DB: Query chat_sessions table
+  DB -->> CRUD: Ownership verified
+  CRUD -->> CSM: Access granted
+
+  CSM ->> CCM: load_user_context(user_id) [refresh context]
+  CCM ->> DB: Get latest resume/roadmap data
+  DB -->> CCM: Updated context
+  CCM -->> CSM: Fresh user context
+
+  CSM ->> LCW: send_message(session_id, message, user_context)
+  LCW ->> LCDB: Add HumanMessage to history
+  LCDB -->> LCW: Message stored
+
+  LCW ->> CCA: get_career_advice(message, user_context)
+  CCA ->> CCA: Process with pydantic-ai agent
+  CCA -->> LCW: CareerAdviceResponse (structured)
+
+  LCW ->> LCW: format_advice_response(advice)
+  LCW ->> LCDB: Add AIMessage to history
+  LCDB -->> LCW: Response stored
+  LCW -->> CSM: Formatted response text
+
+  CSM -->> API: {agent_response, success}
+  API -->> U: AI career advice response
+end
+
+' 4. Get Chat History
+group Get Chat History
+  U ->> API: GET /career-chat/history/{session_id} (JWT)
+  API ->> AUTH: Verify JWT & extract user_id
+  AUTH -->> API: Validated user_id
+  API ->> CSM: get_chat_history(session_id, user_id)
+
+  CSM ->> CRUD: verify_user_session(session_id, user_id)
+  CRUD ->> DB: Verify ownership
+  DB -->> CRUD: Access confirmed
+  CRUD -->> CSM: Verified
+
+  CSM ->> LCW: get_chat_history(session_id)
+  LCW ->> LCDB: Retrieve message history
+  LCDB -->> LCW: List of messages
+  LCW -->> CSM: Formatted message history
+  CSM -->> API: {messages, total_messages}
+  API -->> U: Complete conversation history
+end
+
+' 5. Clear Chat Session
+group Clear Chat Session
+  U ->> API: DELETE /career-chat/clear/{session_id} (JWT)
+  API ->> AUTH: Verify JWT & extract user_id
+  AUTH -->> API: Validated user_id
+  API ->> CSM: clear_session(session_id, user_id)
+
+  CSM ->> CRUD: delete_session(session_id, user_id)
+  CRUD ->> DB: DELETE FROM chat_sessions WHERE session_id AND user_id
+  DB -->> CRUD: Session deleted (if owned by user)
+  CRUD -->> CSM: Deletion result
+
+  ' LangChain chat history remains in DB but session ownership is removed
+  CSM -->> API: {success: true, message: "Session cleared"}
+  API -->> U: Session successfully cleared
+end
+
+' Security Features Note
+hnote over API,CRUD
+Security Features:
+- JWT authentication on every request
+- Session ownership verification before any operation
+- User isolation: Only own sessions/data accessible
+- HTTP status codes (403 for denied)
+- Context refresh on each message
+end note
+
+@enduml
