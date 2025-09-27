@@ -1,294 +1,261 @@
-# """
-# AI-powered career roadmap generation endpoints.
-# """
-#
-# from fastapi import APIRouter, HTTPException, Depends, status, Response
-# from pydantic import BaseModel, Field
-# from typing import Optional
-#
-# from src.backend.api.deps import get_current_user_id
-# from src.backend.core.multi_agent_systems.cv_analysis.road_maps import (
-#     generate_user_roadmap,
-#     RoadmapOutput,
-#     RoadmapRequest as AgentRoadmapRequest,
-#     OutputFormat,
-#     RoadmapSize,
-#     RoadmapAgent
-# )
-#
-# router = APIRouter(prefix="/ai/roadmap", tags=["ai-roadmap"])
-#
-# class RoadmapRequest(BaseModel):
-#     """Request for roadmap generation"""
-#     resume_id: Optional[str] = Field(default=None, description="Specific resume ID, if not provided uses latest")
-#     target_role: Optional[str] = Field(default=None, description="Target role for career progression")
-#     enable_market_research: bool = Field(default=True, description="Whether to include market research")
-#     output_format: OutputFormat = Field(default=OutputFormat.SVG, description="Desired output format")
-#     max_stages: int = Field(default=8, description="Maximum number of roadmap stages", ge=3, le=15)
-#
-# class RoadmapResponse(BaseModel):
-#     """Response with career roadmap"""
-#     current_role: str = Field(description="User's current role")
-#     target_role: str = Field(description="Target career goal")
-#     total_duration: str = Field(description="Estimated total timeline")
-#     roadmap_size: RoadmapSize = Field(description="Roadmap complexity category")
-#     stages_count: int = Field(description="Number of stages in roadmap")
-#     confidence_score: int = Field(description="Confidence in roadmap quality (0-100)")
-#     generation_summary: str = Field(description="Summary of roadmap generation")
-#     visualization_format: OutputFormat = Field(description="Format of visual output")
-#     graphviz_source: str = Field(description="Generated visualization code")
-#     market_research_included: bool = Field(description="Whether market research was included")
-#
-# @router.post("/generate", response_model=RoadmapResponse)
-# async def generate_career_roadmap(
-#     request: RoadmapRequest,
-#     current_user_id: str = Depends(get_current_user_id)
-# ) -> RoadmapResponse:
-#     """
-#     Generate AI-powered career roadmap for user's resume.
-#
-#     Args:
-#         request: Roadmap generation request with options
-#         current_user_id: Current authenticated user ID
-#
-#     Returns:
-#         Comprehensive career roadmap with visualization
-#
-#     Raises:
-#         404: If no resume found for user
-#         500: If generation fails
-#     """
-#     try:
-#         # Generate roadmap using the multi-agent system
-#         roadmap_output = await generate_user_roadmap(
-#             user_id=current_user_id,
-#             target_role=request.target_role,
-#             enable_market_research=request.enable_market_research,
-#             output_format=request.output_format
-#         )
-#
-#         # Check if generation failed
-#         if roadmap_output.confidence_score == 0 and "error" in roadmap_output.generation_summary.lower():
-#             if "not found" in roadmap_output.generation_summary.lower():
-#                 raise HTTPException(
-#                     status_code=status.HTTP_404_NOT_FOUND,
-#                     detail="No resume found for user"
-#                 )
-#             else:
-#                 raise HTTPException(
-#                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                     detail=roadmap_output.generation_summary
-#                 )
-#
-#         # Create response
-#         return RoadmapResponse(
-#             current_role=roadmap_output.roadmap.metadata.current_role,
-#             target_role=roadmap_output.roadmap.metadata.target_role,
-#             total_duration=roadmap_output.roadmap.metadata.total_duration,
-#             roadmap_size=roadmap_output.roadmap.metadata.roadmap_size,
-#             stages_count=len(roadmap_output.roadmap.stages),
-#             confidence_score=roadmap_output.confidence_score,
-#             generation_summary=roadmap_output.generation_summary,
-#             visualization_format=roadmap_output.visualization.output_format,
-#             graphviz_source=roadmap_output.visualization.graphviz_source,
-#             market_research_included=request.enable_market_research
-#         )
-#
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"Roadmap generation failed: {str(e)}"
-#         )
-#
-# @router.post("/generate/{resume_id}", response_model=RoadmapResponse)
-# async def generate_specific_resume_roadmap(
-#     resume_id: str,
-#     target_role: Optional[str] = None,
-#     enable_market_research: bool = True,
-#     output_format: OutputFormat = OutputFormat.SVG,
-#     max_stages: int = 8,
-#     current_user_id: str = Depends(get_current_user_id)
-# ) -> RoadmapResponse:
-#     """
-#     Generate AI-powered roadmap for a specific resume.
-#
-#     Args:
-#         resume_id: Specific resume ID to analyze
-#         target_role: Optional target role (will be inferred if not provided)
-#         enable_market_research: Whether to include market research
-#         output_format: Desired visualization format
-#         max_stages: Maximum number of roadmap stages
-#         current_user_id: Current authenticated user ID
-#
-#     Returns:
-#         Comprehensive career roadmap with visualization
-#
-#     Raises:
-#         404: If resume not found or doesn't belong to user
-#         500: If generation fails
-#     """
-#     try:
-#         agent = RoadmapAgent()
-#         request = AgentRoadmapRequest(
-#             user_id=current_user_id,
-#             resume_id=resume_id,
-#             target_role=target_role,
-#             enable_market_research=enable_market_research,
-#             output_format=output_format,
-#             max_stages=max_stages
-#         )
-#
-#         roadmap_output = await agent.generate_roadmap(request)
-#
-#         # Check if generation failed
-#         if roadmap_output.confidence_score == 0 and "error" in roadmap_output.generation_summary.lower():
-#             if "not found" in roadmap_output.generation_summary.lower():
-#                 raise HTTPException(
-#                     status_code=status.HTTP_404_NOT_FOUND,
-#                     detail="Resume not found or doesn't belong to user"
-#                 )
-#             else:
-#                 raise HTTPException(
-#                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                     detail=roadmap_output.generation_summary
-#                 )
-#
-#         return RoadmapResponse(
-#             current_role=roadmap_output.roadmap.metadata.current_role,
-#             target_role=roadmap_output.roadmap.metadata.target_role,
-#             total_duration=roadmap_output.roadmap.metadata.total_duration,
-#             roadmap_size=roadmap_output.roadmap.metadata.roadmap_size,
-#             stages_count=len(roadmap_output.roadmap.stages),
-#             confidence_score=roadmap_output.confidence_score,
-#             generation_summary=roadmap_output.generation_summary,
-#             visualization_format=roadmap_output.visualization.output_format,
-#             graphviz_source=roadmap_output.visualization.graphviz_source,
-#             market_research_included=enable_market_research
-#         )
-#
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"Roadmap generation failed: {str(e)}"
-#         )
-#
-# @router.get("/render/{resume_id}")
-# async def render_roadmap_image(
-#     resume_id: str,
-#     target_role: Optional[str] = None,
-#     output_format: OutputFormat = OutputFormat.PNG,
-#     current_user_id: str = Depends(get_current_user_id)
-# ):
-#     """
-#     Generate and render roadmap as image/file.
-#
-#     Args:
-#         resume_id: Resume ID to generate roadmap for
-#         target_role: Optional target role
-#         output_format: Output format (PNG, SVG, PDF)
-#         current_user_id: Current authenticated user ID
-#
-#     Returns:
-#         Rendered roadmap as file download
-#
-#     Raises:
-#         404: If resume not found
-#         500: If rendering fails
-#     """
-#     try:
-#         # Generate roadmap
-#         agent = RoadmapAgent()
-#         request = AgentRoadmapRequest(
-#             user_id=current_user_id,
-#             resume_id=resume_id,
-#             target_role=target_role,
-#             enable_market_research=True,
-#             output_format=output_format
-#         )
-#
-#         roadmap_output = await agent.generate_roadmap(request)
-#
-#         if roadmap_output.confidence_score == 0:
-#             raise HTTPException(
-#                 status_code=status.HTTP_404_NOT_FOUND,
-#                 detail="Could not generate roadmap for resume"
-#             )
-#
-#         # Render to bytes (this would use graphviz library in actual implementation)
-#         from src.backend.core.multi_agent_systems.cv_analysis.road_maps.template_engine import render_graphviz_to_format
-#
-#         rendered_bytes = render_graphviz_to_format(
-#             roadmap_output.visualization.graphviz_source,
-#             output_format
-#         )
-#
-#         # Set appropriate content type and filename
-#         content_types = {
-#             OutputFormat.PNG: "image/png",
-#             OutputFormat.SVG: "image/svg+xml",
-#             OutputFormat.PDF: "application/pdf",
-#             OutputFormat.DOT: "text/plain"
-#         }
-#
-#         extensions = {
-#             OutputFormat.PNG: "png",
-#             OutputFormat.SVG: "svg",
-#             OutputFormat.PDF: "pdf",
-#             OutputFormat.DOT: "dot"
-#         }
-#
-#         content_type = content_types.get(output_format, "application/octet-stream")
-#         extension = extensions.get(output_format, "bin")
-#         filename = f"career_roadmap_{current_user_id[:8]}.{extension}"
-#
-#         return Response(
-#             content=rendered_bytes,
-#             media_type=content_type,
-#             headers={"Content-Disposition": f"attachment; filename={filename}"}
-#         )
-#
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"Roadmap rendering failed: {str(e)}"
-#         )
-#
-# @router.get("/formats")
-# async def get_supported_formats():
-#     """
-#     Get list of supported output formats for roadmap visualization.
-#
-#     Returns:
-#         List of supported formats with descriptions
-#     """
-#     return {
-#         "formats": [
-#             {
-#                 "format": "svg",
-#                 "description": "Scalable Vector Graphics - Best for web display",
-#                 "mime_type": "image/svg+xml"
-#             },
-#             {
-#                 "format": "png",
-#                 "description": "Portable Network Graphics - Good for sharing",
-#                 "mime_type": "image/png"
-#             },
-#             {
-#                 "format": "pdf",
-#                 "description": "Portable Document Format - Best for printing",
-#                 "mime_type": "application/pdf"
-#             },
-#             {
-#                 "format": "dot",
-#                 "description": "Graphviz DOT source code - For customization",
-#                 "mime_type": "text/plain"
-#             }
-#         ],
-#         "recommended": "svg"
-#     }
+"""
+AI-powered career roadmap generation endpoints.
+"""
+
+from fastapi import APIRouter, HTTPException, Depends, status, Response
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+
+from src.backend.api.deps import get_current_user_id
+from src.backend.core.multi_agent_systems.cv_analysis.road_maps.road_map_agent import (
+    RoadMapAgent,
+    get_user_resume_sections
+)
+
+router = APIRouter(prefix="/ai/roadmap", tags=["ai-roadmap"])
+class RoadmapRequest(BaseModel):
+    """Request for roadmap generation"""
+    resume_id: Optional[str] = Field(default=None, description="Specific resume ID, if not provided uses latest")
+    user_goal: str = Field(description="Target role or career goal")
+
+class RoadmapStepResponse(BaseModel):
+    """Individual roadmap step"""
+    id: str = Field(description="Step identifier")
+    label: str = Field(description="Step title")
+    detail: Optional[str] = Field(description="Detailed instructions")
+    timeframe: Optional[str] = Field(description="Estimated timeframe")
+    milestone: bool = Field(description="Whether this is a key milestone")
+
+class RoadmapEdgeResponse(BaseModel):
+    """Connection between roadmap steps"""
+    source: str = Field(description="Source step ID")
+    target: str = Field(description="Target step ID")
+    label: Optional[str] = Field(description="Edge label")
+
+class RoadmapTextResponse(BaseModel):
+    """Formatted text response for roadmap"""
+    user_goal: str = Field(description="Target career goal")
+    total_steps: int = Field(description="Total number of steps")
+    milestones_count: int = Field(description="Number of key milestones")
+    steps: List[RoadmapStepResponse] = Field(description="All roadmap steps")
+    edges: List[RoadmapEdgeResponse] = Field(description="Step connections")
+    formatted_text: str = Field(description="Human-readable roadmap text")
+    success: bool = Field(description="Whether generation succeeded")
+
+class MermaidResponse(BaseModel):
+    """Mermaid diagram response"""
+    user_goal: str = Field(description="Target career goal")
+    mermaid_diagram: str = Field(description="Mermaid diagram content")
+    diagram_type: str = Field(description="Type of diagram generated")
+    success: bool = Field(description="Whether generation succeeded")
+@router.post("/generate-text", response_model=RoadmapTextResponse)
+async def generate_roadmap_text(
+    request: RoadmapRequest,
+    current_user_id: str = Depends(get_current_user_id)
+) -> RoadmapTextResponse:
+    """
+    Generate AI-powered career roadmap as formatted text.
+
+    Args:
+        request: Roadmap generation request
+        current_user_id: Current authenticated user ID
+
+    Returns:
+        Formatted text roadmap with steps and suggestions
+
+    Raises:
+        404: If no resume found for user
+        500: If generation fails
+    """
+    try:
+        # Get user resume sections
+        sections = get_user_resume_sections(current_user_id, request.resume_id)
+
+        if not sections:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No resume found for user"
+            )
+
+        # Generate roadmap using the agent
+        agent = RoadMapAgent()
+        result = await agent.generate_roadmap(sections, request.user_goal, save_mermaid=False)
+
+        if "error" in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result["error"]
+            )
+
+        roadmap_data = result["roadmap_steps"]
+
+        # Convert to response format
+        steps = [
+            RoadmapStepResponse(
+                id=step.id,
+                label=step.label,
+                detail=step.detail,
+                timeframe=step.timeframe,
+                milestone=step.milestone
+            )
+            for step in roadmap_data.steps
+        ]
+
+        edges = [
+            RoadmapEdgeResponse(
+                source=edge.source,
+                target=edge.target,
+                label=edge.label
+            )
+            for edge in roadmap_data.edges
+        ]
+
+        # Format as human-readable text
+        formatted_text = _format_roadmap_text(roadmap_data, request.user_goal)
+
+        return RoadmapTextResponse(
+            user_goal=request.user_goal,
+            total_steps=len(steps),
+            milestones_count=sum(1 for step in steps if step.milestone),
+            steps=steps,
+            edges=edges,
+            formatted_text=formatted_text,
+            success=True
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Roadmap generation failed: {str(e)}"
+        )
+@router.post("/generate-mermaid", response_model=MermaidResponse)
+async def generate_roadmap_mermaid(
+    request: RoadmapRequest,
+    diagram_type: str = "detailed",
+    current_user_id: str = Depends(get_current_user_id)
+) -> MermaidResponse:
+    """
+    Generate AI-powered career roadmap as Mermaid diagram.
+
+    Args:
+        request: Roadmap generation request
+        diagram_type: Type of diagram ("detailed" or "clickable")
+        current_user_id: Current authenticated user ID
+
+    Returns:
+        Mermaid diagram content
+
+    Raises:
+        404: If no resume found for user
+        500: If generation fails
+    """
+    try:
+        # Get user resume sections
+        sections = get_user_resume_sections(current_user_id, request.resume_id)
+
+        if not sections:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No resume found for user"
+            )
+
+        # Generate roadmap using the agent
+        agent = RoadMapAgent()
+        result = await agent.generate_roadmap(sections, request.user_goal, save_mermaid=True)
+
+        if "error" in result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result["error"]
+            )
+
+        # Get the appropriate Mermaid diagram
+        mermaid_content = result.get("mermaid_diagram", "")
+
+        if not mermaid_content:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate Mermaid diagram"
+            )
+
+        return MermaidResponse(
+            user_goal=request.user_goal,
+            mermaid_diagram=mermaid_content,
+            diagram_type=diagram_type,
+            success=True
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Mermaid generation failed: {str(e)}"
+        )
+# HELPER FUNCTIONS
+
+def _format_roadmap_text(roadmap_data, user_goal: str) -> str:
+    """
+    Format roadmap data into human-readable text.
+
+    Args:
+        roadmap_data: RoadmapAgentResponse containing steps and edges
+        user_goal: Target career goal
+
+    Returns:
+        Formatted text representation of the roadmap
+    """
+    text_lines = [
+        f"# Career Roadmap: {user_goal}",
+        "",
+        f"This roadmap contains {len(roadmap_data.steps)} steps to help you achieve your goal.",
+        "",
+        "## Roadmap Steps",
+        ""
+    ]
+
+    # Group steps by milestones and regular steps
+    milestones = [step for step in roadmap_data.steps if step.milestone]
+    regular_steps = [step for step in roadmap_data.steps if not step.milestone]
+
+    # Add milestones section
+    if milestones:
+        text_lines.extend([
+            "### 🎯 Key Milestones",
+            ""
+        ])
+        for i, milestone in enumerate(milestones, 1):
+            text_lines.append(f"**{i}. {milestone.label}**")
+            if milestone.timeframe:
+                text_lines.append(f"   ⏱️ Timeline: {milestone.timeframe}")
+            if milestone.detail:
+                text_lines.append(f"   📋 Details: {milestone.detail}")
+            text_lines.append("")
+
+    # Add regular steps section
+    if regular_steps:
+        text_lines.extend([
+            "### 📌 Action Steps",
+            ""
+        ])
+        for i, step in enumerate(regular_steps, 1):
+            text_lines.append(f"**{i}. {step.label}**")
+            if step.timeframe:
+                text_lines.append(f"   ⏱️ Timeline: {step.timeframe}")
+            if step.detail:
+                text_lines.append(f"   📋 Details: {step.detail}")
+            text_lines.append("")
+
+    # Add connections overview
+    if roadmap_data.edges:
+        text_lines.extend([
+            "## Step Dependencies",
+            ""
+        ])
+        for edge in roadmap_data.edges:
+            label_text = f" ({edge.label})" if edge.label else ""
+            text_lines.append(f"• {edge.source} → {edge.target}{label_text}")
+
+    return "\n".join(text_lines)
