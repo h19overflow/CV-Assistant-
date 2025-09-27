@@ -6,6 +6,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+from src.backend.boundary.databases.db import AuthCRUD
 from src.backend.boundary.databases.db.models import Resume
 from src.backend.boundary.databases.db.engine import get_session_context
 
@@ -94,3 +95,30 @@ def get_resume_by_filename(user_id: str, filename: str) -> Optional[Resume]:
             Resume.user_id == user_id,
             Resume.filename == filename
         ).first()
+
+
+if __name__ == '__main__':
+    user_email = "hamzakhaledlklk@gmail.com"
+    from src.backend.boundary.databases.db.CRUD.auth_CRUD import AuthCRUD
+
+    user = AuthCRUD.get_user_by_email(user_email)
+    print(f"User: {user}")
+    print("-" * 50)
+
+    result = get_user_resumes(user_id=user.id)
+    print(f"Found {len(result)} resumes for user {user.email}")
+    print("-" * 50)
+
+    for i, row in enumerate(result):
+        print(f"Resume {i + 1}:")
+        print(f"  ID: {row.id}")
+        print(f"  Filename: {row.filename}")
+        print(f"  User ID: {row.user_id}")
+        print(f"  Original Text: {len(row.original_text) if row.original_text else 0} chars")
+        print(f"  Summary: {len(row.summary) if row.summary else 0} chars")
+        print(f"  Skills: {len(row.skills) if row.skills else 0} chars")
+        print(f"  Experience: {len(row.experience) if row.experience else 0} chars")
+        print(f"  Projects: {len(row.projects) if row.projects else 0} chars")
+        print(f"  Education: {len(row.education) if row.education else 0} chars")
+        print(f"  Certificates: {len(row.certificates) if row.certificates else 0} chars")
+        print("-" * 30)

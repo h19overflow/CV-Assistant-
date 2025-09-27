@@ -1,15 +1,36 @@
 """
 Authentication CRUD operations for user management.
-Simple password hashing using passlib.
+Simple password hashing using passlib and JWT token generation.
+
+Overview:
+1. User registers: Password hashed with Passlib and stored alongside a unique user ID
+2. User logs in: Credentials verified, then a signed JWT returned containing user ID
+3. Frontend: Sends JWT (as Bearer token) with each authorized request
+4. Backend: Validates JWT and retrieves user ID for all CRUD operations
 """
 
 from typing import Optional
+from datetime import datetime, timedelta
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+import os
+
+# JWT imports - install with: pip install python-jose[cryptography]
+try:
+    from jose import jwt, JWTError
+    JWT_AVAILABLE = True
+except ImportError:
+    JWT_AVAILABLE = False
+    print("Warning: python-jose not installed. JWT features disabled.")
 
 from src.backend.boundary.databases.db.models import User
 from src.backend.boundary.databases.db.engine import get_session_context
+
+# JWT Configuration - these should be environment variables in production
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-super-secret-key-change-this-in-production")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRY_MINUTES = 30  # How long the token lasts
 
 
 class AuthError(Exception):
@@ -32,6 +53,11 @@ class InvalidCredentialsError(AuthError):
     pass
 
 
+class InvalidTokenError(AuthError):
+    """Raised when JWT token is invalid or expired"""
+    pass
+
+
 class AuthCRUD:
     """CRUD operations for user authentication"""
 
@@ -44,6 +70,69 @@ class AuthCRUD:
     def verify_password(password: str, hashed: str) -> bool:
         """Verify a password against its hash"""
         return pbkdf2_sha256.verify(password, hashed)
+
+    @staticmethod
+    def create_access_token(user_id: str) -> str:
+        """
+        Create a JWT access token for a user.
+
+        Args:
+            user_id: The user's unique ID to include in the token
+
+        Returns:
+            JWT token string
+
+        Raises:
+            RuntimeError: If JWT library is not available
+        """
+        if not JWT_AVAILABLE:
+            raise RuntimeError("JWT library not available. Install python-jose[cryptography]")
+
+        # Calculate when the token expires
+        expire_time = datetime.utcnow() + timedelta(minutes=JWT_EXPIRY_MINUTES)
+
+        # Create the payload - 'sub' (subject) is standard for user ID
+        payload = {
+            "sub": str(user_id),  # Subject - the user this token belongs to
+            "exp": expire_time,   # Expiration time
+            "iat": datetime.utcnow()  # Issued at time
+        }
+
+        # Sign and encode the token
+        token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+        return token
+
+    @staticmethod
+    def verify_access_token(token: str) -> str:
+        """
+        Verify a JWT token and extract the user ID.
+
+        Args:
+            token: JWT token string
+
+        Returns:
+            User ID from the token
+
+        Raises:
+            InvalidTokenError: If token is invalid, expired, or malformed
+        """
+        if not JWT_AVAILABLE:
+            raise RuntimeError("JWT library not available. Install python-jose[cryptography]")
+
+        try:
+            # Decode and verify the token
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+
+            # Extract user ID from 'sub' claim
+            user_id = payload.get("sub")
+            if not user_id:
+                raise InvalidTokenError("Token missing user ID")
+
+            return user_id
+
+        except JWTError as e:
+            # This catches expired, invalid signature, malformed tokens, etc.
+            raise InvalidTokenError(f"Invalid token: {str(e)}")
 
     @staticmethod
     def create_user(email: str, password: str) -> User:
@@ -102,6 +191,34 @@ class AuthCRUD:
                 raise InvalidCredentialsError("Invalid email or password")
 
             return user
+
+    @staticmethod
+    def login_with_token(email: str, password: str) -> dict:
+        """
+        Authenticate user and return JWT token (use this for login endpoints).
+
+        Args:
+            email: User email address
+            password: Plain text password
+
+        Returns:
+            Dictionary with user info and access token
+
+        Raises:
+            InvalidCredentialsError: If credentials are invalid
+        """
+        # First authenticate the user
+        user = AuthCRUD.authenticate_user(email, password)
+
+        # Create JWT token for this user
+        access_token = AuthCRUD.create_access_token(user.id)
+
+        return {
+            "user_id": str(user.id),
+            "email": user.email,
+            "access_token": access_token,
+            "token_type": "bearer"  # Standard OAuth2 token type
+        }
 
     @staticmethod
     def get_user_by_id(user_id: str) -> Optional[User]:
@@ -210,6 +327,16 @@ def create_user(email: str, password: str) -> User:
 def login_user(email: str, password: str) -> User:
     """Authenticate user - convenience function"""
     return AuthCRUD.authenticate_user(email, password)
+
+
+def login_with_jwt(email: str, password: str) -> dict:
+    """Login and get JWT token - convenience function"""
+    return AuthCRUD.login_with_token(email, password)
+
+
+def verify_jwt_token(token: str) -> str:
+    """Verify JWT token and get user ID - convenience function"""
+    return AuthCRUD.verify_access_token(token)
 
 
 def get_user(user_id: str) -> Optional[User]:
