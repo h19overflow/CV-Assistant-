@@ -60,7 +60,7 @@ def fetch_context(queries:list)->list[Document]:
     from src.backend.boundary.databases.vdb.vdb_engine import get_vector_client
     client = get_vector_client(collection_name='cv_documents')
     # Use the optimized batch query method
-    doc_results = client.query_batch(queries, k=1)
+    doc_results = client.query_batch(queries, k=5)
     return doc_results
 
 async def fetch_context_async(queries:list)->list[Document]:

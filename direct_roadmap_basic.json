@@ -1,0 +1,69 @@
+{
+  "test_type": "basic_roadmap",
+  "user_email": "hamzakhaledlklk@gmail.com",
+  "user_id": "10fe6750-2ea5-44b0-9a03-cb468e205c16",
+  "current_role": "Data Scientist",
+  "target_role": "Senior Software Engineer",
+  "total_duration": "6-12 months",
+  "roadmap_size": "medium",
+  "stages_count": 3,
+  "confidence_score": 85,
+  "generation_summary": "Roadmap generated for Data Scientist \u2192 Senior Software Engineer transition",
+  "template_used": "branched_parallel",
+  "stages": [
+    {
+      "stage_id": "stage_1",
+      "title": "Skill Assessment and Gap Analysis",
+      "duration": "1 month",
+      "description": "Identify current skills and gaps",
+      "skills_to_learn": [
+        "Self-assessment",
+        "Goal setting"
+      ],
+      "resources": [
+        "Online assessments",
+        "Career counseling"
+      ],
+      "milestones": [
+        "Complete skill inventory"
+      ],
+      "difficulty_level": "Beginner"
+    },
+    {
+      "stage_id": "stage_2",
+      "title": "Core Skill Development",
+      "duration": "3-4 months",
+      "description": "Build foundational skills for target role",
+      "skills_to_learn": [
+        "Core technical skills",
+        "Best practices"
+      ],
+      "resources": [
+        "Online courses",
+        "Documentation"
+      ],
+      "milestones": [
+        "Complete certification"
+      ],
+      "difficulty_level": "Intermediate"
+    },
+    {
+      "stage_id": "stage_3",
+      "title": "Practical Application",
+      "duration": "2-3 months",
+      "description": "Apply skills in real projects",
+      "skills_to_learn": [
+        "Project management",
+        "Real-world application"
+      ],
+      "resources": [
+        "Personal projects",
+        "Open source contributions"
+      ],
+      "milestones": [
+        "Deploy working project"
+      ],
+      "difficulty_level": "Intermediate"
+    }
+  ]
+}

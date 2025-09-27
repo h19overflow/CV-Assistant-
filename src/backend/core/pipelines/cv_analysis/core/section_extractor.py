@@ -172,7 +172,7 @@ class SectionExtractor:
             combined_content = "\n\n".join(unique_content)
 
             # Limit length to avoid extremely long sections
-            max_length = 1500
+            max_length = 2500
             if len(combined_content) > max_length:
                 combined_content = combined_content[:max_length] + "... [content truncated]"
 

@@ -1,0 +1,54 @@
+@startuml
+actor "User" as USER
+participant "FastAPI Router" as ROUTER
+participant "get_current_user_id" as AUTH
+participant "DatabaseManager" as DB
+participant "Resume CRUD" as RESUMECRUD
+participant "FeedbackAgent" as AGENT
+participant "PerplexitySearchTool" as PERPLEXTOOL
+participant "feedback_agent (Gemini)" as GEMINI
+
+== Resume Feedback Request /analyze ==
+
+USER -> ROUTER : POST /ai/feedback/analyze \n (FeedbackRequest)
+ROUTER -> AUTH : Depends(get_current_user_id)
+AUTH -> DB : verify_jwt_token(token)
+DB --> AUTH : User ID
+AUTH --> ROUTER : user_id
+
+alt resume_id None (Latest Resume)
+    ROUTER --> AGENT : analyze_user_resume(user_id, enable_market_research)
+    AGENT -> RESUMECRUD : get_user_resumes(user_id)
+    RESUMECRUD --> AGENT : [resume objects]
+    AGENT -> AGENT : Format latest resume_data
+else resume_id provided
+    ROUTER --> AGENT : analyze_resume(user_id, resume_id, enable_market_research)
+    AGENT -> RESUMECRUD : get_resume(resume_id)
+    RESUMECRUD --> AGENT : resume object
+    AGENT -> AGENT : Validate ownership
+    AGENT -> AGENT : Format resume_data
+end
+
+alt Market Research enabled
+    AGENT -> AGENT : _extract_skills_from_resume(resume_data)
+    AGENT -> PERPLEXTOOL : search("Current job market ...")
+    PERPLEXTOOL --> AGENT : search_response
+    AGENT -> AGENT : Format market_data (top 3 results)
+else Market Research disabled
+    AGENT -> AGENT : market_data = ""
+end
+
+AGENT -> GEMINI : feedback_agent.run(prompt, deps)
+GEMINI --> AGENT : ResumeFeedback (score, summary, skills, section_feedback...)
+
+alt Feedback Error
+    AGENT -> AGENT : _create_error_feedback(error_msg)
+end
+
+AGENT --> ROUTER : ResumeFeedback as FeedbackResponse
+ROUTER --> USER : FeedbackResponse (score, summary, section_feedback...)
+
+== Error Handling ==
+ROUTER -> USER : 404/500 if no resume or analysis failed
+
+@enduml

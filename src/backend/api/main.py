@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.backend.api.endpoints.doc_handling.cv_processing import router as cv_router
 from src.backend.api.endpoints.authentication.auth_endpoints import router as auth_router
 from src.backend.api.endpoints.ai_generation.feedback_endpoints import router as feedback_router
+from src.backend.api.endpoints.ai_generation.roadmap_endpoints import router as roadmap_router
 from src.backend.api.deps import lifespan_manager
 
 app = FastAPI(
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(cv_router)
 app.include_router(feedback_router)
+app.include_router(roadmap_router)
 
 @app.get("/")
 async def root():
@@ -46,7 +48,11 @@ async def root():
             "/cv/query": "Query CV content",
             "/cv/health": "Health check",
             "/ai/feedback/analyze": "Get AI feedback for latest resume",
-            "/ai/feedback/analyze/{resume_id}": "Get AI feedback for specific resume"
+            "/ai/feedback/analyze/{resume_id}": "Get AI feedback for specific resume",
+            "/ai/roadmap/generate": "Generate career roadmap for latest resume",
+            "/ai/roadmap/generate/{resume_id}": "Generate roadmap for specific resume",
+            "/ai/roadmap/render/{resume_id}": "Render roadmap as image/file",
+            "/ai/roadmap/formats": "Get supported output formats"
         }
     }
 
